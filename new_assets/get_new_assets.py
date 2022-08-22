@@ -16,7 +16,7 @@ headers = {
     "x-csrf-token": "Z7PHbAZLfhkxir+R7J38fRhuFWOocgNa0GzMsRqAoXZ73cfauhWelNAVHsa+1JWh0DsWYLlfypIIxy0RdFMCog==",
     "x-requested-with": "XMLHttpRequest",
     "cookie": cookie,
-    "Referer": "https://app.conviso.com.br/scopes/430/integrations/fortify/select_projects?locale=en",
+    "Referer": "https://app.conviso.com.br/scopes/{}/integrations/fortify/select_projects?locale=en".format(scope_id),
     "Referrer-Policy": "strict-origin-when-cross-origin"
 }
 
