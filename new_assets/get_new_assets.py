@@ -2,8 +2,8 @@ from bs4 import BeautifulSoup
 import re
 import requests
 
-scope_id = 430 # Vivo - Telefonica scopeId
-cookie = "" # get cookie from app.conviso.com.br site
+scope_id = 11 
+cookie = ""
 url = 'https://app.conviso.com.br/scopes/{scope_id}/integrations/fortify/select_projects?page={{page_number}}'.format(scope_id=scope_id)
 headers = {
   "accept": "*/*;q=0.5, text/javascript, application/javascript, application/ecmascript, application/x-ecmascript",
