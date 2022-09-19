@@ -93,9 +93,12 @@ def loadingVulns(kindOf):
                     vulns.append(texto)
         cont = cont + 1
         if cont > vulnerabilities['data']['vulnerabilities']['metadata']['totalPages']:
-            break    
-    saveFile(fileName, vulns)
-    print("Arquivo gerado com sucesso!!!")
+            break
+    if len(vulns) > 0:
+        saveFile(fileName, vulns)
+        print("Arquivo gerado com sucesso!!!")
+    else:
+        "Nenhum vulnerabilidade encontrada com o filtro selecionado!"
 
 if __name__ == '__main__':
      while True:
