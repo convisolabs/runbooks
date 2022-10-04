@@ -5,7 +5,7 @@ import csv
 
 
 from enum import Enum
-from datetime import datetime
+from datetime import datetime,date
 
 
 class HTTP_METHOD(Enum):
@@ -283,6 +283,9 @@ def FillConvisoPlatformFieldsAndClickUp():
     custom_field_demand_type = SelectCustomFieldDemandType()
     objStartDate = datetime.strptime(startDate, '%Y-%m-%d')
     objFinishDate = datetime.strptime(finishDate, '%Y-%m-%d')
+    objStartDateConvisoPlatform = date.today()
+    if (objStartDateConvisoPlatform < datetime.date(objStartDate)):
+        objStartDateConvisoPlatform = objStartDate    
     graphQLObj = {
        'companyId': int(projectId),
        'label': label,
@@ -290,7 +293,7 @@ def FillConvisoPlatformFieldsAndClickUp():
        'playbooksIds': [1],
        'scope': scope,
        'typeId': int(typeId),
-       'startDate': f'{objStartDate:%Y%m%d}',
+       'startDate': f'{objStartDateConvisoPlatform:%Y%m%d}',
        'estimatedHours':estimatedHours,
     }
     clickupObject = {
