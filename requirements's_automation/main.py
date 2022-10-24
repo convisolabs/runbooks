@@ -1,12 +1,12 @@
 import sys
 import pandas as pd
 import requests
+import os
 
 from pandas import ExcelWriter #pip install openpyxl
 
-#CONVISO_PLATFORM_URI =  'https://app.convisoappsec.com/graphql'
-CONVISO_PLATFORM_URI =  'https://homologa.convisoappsec.com/graphql'
-CONVISO_PLATFORM_TOKEN = input('Please, API Key>')
+CONVISO_PLATFORM_URI =  os.environ.get('CONVISO_PLATFORM_URI')
+CONVISO_PLATFORM_TOKEN = os.environ.get('CONVISO_PLATFORM_TOKEN')
 CONVISO_PLATFORM_STATUS_CODE = 200
 CONVISO_PLATFORM_STATUS_CODE_ERROR = 500
 CONVISO_PLATFORM_HEADERS = {'x-api-key':CONVISO_PLATFORM_TOKEN}
