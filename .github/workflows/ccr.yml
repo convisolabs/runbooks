@@ -7,7 +7,7 @@ on:
 
 jobs:
  conviso-cr:
-   runs-on: self-hosted
+   runs-on: ubuntu-latest
    container:
      image: convisoappsec/flowcli
      env:
