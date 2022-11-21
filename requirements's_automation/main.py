@@ -29,8 +29,6 @@ query Projects($id:ID!){
     }
 }
 '''
-#query Projects($id:ID!, $page:Int, $limit:Int){
-#assets(id: $id, page: $page, limit: $limit){
 CONVISO_PLATFORM_VULNERABILITIES_QUERY = '''
 query Assets($id:ID!){
 	assets(id: $id, page:1, limit:1000){
@@ -60,7 +58,7 @@ fragment VulnByAsset on Project{
   }
 }
 '''
-# Requisição online (Consulta na Conviso Platform)
+# Online Request to Conviso Platform
 #
 def runQuery(uri, query, statusCode, headers, variables):
     request = requests.post(uri, json={'query':query, 'variables':variables}, headers=headers)
@@ -74,15 +72,11 @@ def runQuery(uri, query, statusCode, headers, variables):
 def get_requeriments(project):
     var_requi = {'id':project}
     resultado = runQuery(CONVISO_PLATFORM_URI, CONVISO_PLATFORM_REQUIREMENTS_QUERY, CONVISO_PLATFORM_STATUS_CODE, CONVISO_PLATFORM_HEADERS, var_requi)
-    #print(resultado)
-    #print("---------------------------------------------------")
     requirements = []
-    # Etapa obter código ASVS
+    # Get ASVS code
     for item in resultado['data']['project']['activities']:
         title = item['title'].split('-')
-        #new_row = [item['id'], item['title'], title[1]]
         requirements.append(title[1].strip())
-        #print(f'{new_row}')
     return requirements
 
 # Get CWE from Vulnerabilities templates
@@ -90,9 +84,7 @@ def get_requeriments(project):
 def get_vulnerabilities(company):
     var_vuln = {'id':company}
     response = runQuery(CONVISO_PLATFORM_URI, CONVISO_PLATFORM_VULNERABILITIES_QUERY, CONVISO_PLATFORM_STATUS_CODE, CONVISO_PLATFORM_HEADERS, var_vuln)
-    #print(vulnerabilities)
-    #print("---------------------------------------------------")
-    # Etapa obter código CWE
+    # Get CWE code
     vulnerabilities = []
     for asset in response['data']['assets']['collection']:
         projects = asset['projects']
@@ -106,9 +98,7 @@ def get_vulnerabilities(company):
                             if template is not None:
                                 category = template['categoryList']
                                 if category is not None and category != 'N/A':
-                                    #new_row = [asset['id'], asset['name'], category[4:category.find(" ")]]
                                     vulnerabilities.append(category[4:category.find(" ")])
-                                    #print(f'{new_row}')
     return vulnerabilities                                
 
 # Get ASVS from file - only cols from asvs code and cwe
@@ -126,38 +116,37 @@ def writeFile(data, header):
 
 def main():
     try:
-        # Carregando os "Requisitos" de segurança da informação
+        # Loading the security "requeriments"
         requeriments = get_requeriments(input('Enter the Project ID:'))
 
-        # Carregando as "Vulnerabilidades" dos ativos da companhia
+        # Loading "Vulnerabilities" from cia's assets
         vulnerabilities = get_vulnerabilities(input('Enter the Company ID:'))
 
-        # Carregar "ASVS 4.0.2" (versão compatível com Conviso Platform)
+        # Loading "ASVS 4.0.2" (currenty version in Conviso Platform)
         asvs = get_owasp_asvs()
                 
         data = []
-        # Etapa de Análise
         for column, req in enumerate(requeriments):
 
             for field in asvs.values:
                 # ASVS -> CWE
                 if req == field[0]:
                     cwe = str(int(field[2]))
-                    # CWE -> está na lista de vulnerabilidades?
+                    # CWE -> is in vulnerability list?
                     if cwe in vulnerabilities:
-                        # Se temos vulnerabilidade encontrada => requisito não conforme
+                        # Case vulnerability found => requeriment is not according
                         result = 'Not according'
                     elif str(field[1]) == '✓':
-                        # Se não temos vulnerabilidade encontrada e é do nível 1 => requisito em conformidade
+                        # Case vulnerability NOT found and level 1 => requeriment okay
                         result = 'Done'
                     else:
-                        # Se não temos vulnerabilidade encontrada, mas não é do nível 1 => requer análise manual
+                        # Case vulnerability NOT found, but level 2 or 3 => manual analysis necessary
                         result = 'non-automated'
 
                     data.append([req, cwe, result])
-                    print('Requito:', req, '- CWE:', cwe, ' -> ', result)
+                    print('Requeriment:', req, '- CWE:', cwe, ' -> ', result)
 
-        # Etapa de gerar planilha com resultado
+        # generate spreadsheet with result
         header = ['ASVS', 'CWE', 'Result']
         writeFile(data, header)
 
@@ -165,4 +154,5 @@ def main():
         return str(ve)
 
 if __name__ == '__main__':
+  if sys.version_info.major == 3: # mandatory python 3
     sys.exit(main())
