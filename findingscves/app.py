@@ -4,7 +4,7 @@ import os
 from datetime import *
 from enum import Enum
 
-CONVISO_PLATFORM_URI =  'https://appsec.convisoappsec.com/graphql'
+CONVISO_PLATFORM_URI = 'https://appsec.convisoappsec.com/graphql'
 CONVISO_PLATFORM_TOKEN = os.environ.get('CONVISO_PLATFORM_TOKEN','token')
 CONVISO_PLATFORM_STATUS_CODE = 200
 CONVISO_PLATFORM_HEADERS = {'x-api-key': CONVISO_PLATFORM_TOKEN}
