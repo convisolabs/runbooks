@@ -22,3 +22,23 @@ type RequirementsReturnCollection struct {
 	Id    string `json:"id"`
 	Label string `json:"label"`
 }
+
+type ProjectCreateParameters struct {
+	Input ProjectCreateInputParameters `json:"input"`
+}
+
+type ProjectCreateInputParameters struct {
+	CompanyId      int    `json:"companyId"`
+	Label          string `json:"label"`
+	Goal           string `json:"goal"`
+	PlaybooksIds   []int  `json:"playbooksIds"`
+	Scope          string `json:"scope"`
+	TypeId         int    `json:"typeId"`
+	StartDate      string `json:"startDate"`
+	EstimatedHours string `json:"estimatedHours"`
+}
+
+type ProjectCreateResult struct {
+	clientMutationId string
+	errors           []string
+}

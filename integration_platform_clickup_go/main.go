@@ -44,6 +44,77 @@ const CONVISO_PLATFORM_REQUIREMENTS_QUERY = `
 	}
 `
 
+const CONVISO_PLATFORM_PROJECT_CREATE = `
+	mutation CreateProject($input:CreateProjectInput!)
+	{
+		createProject(
+		input: $input
+		) 
+		{
+			clientMutationId
+			errors
+			project 
+			{
+				apiCode
+				apiResponseReview
+				closeComments
+				companyId
+				connectivity
+				continuousDelivery
+				contractedHours
+				createdAt
+				deploySendFrequency
+				dueDate
+				endDate
+				environmentInvaded
+				estimatedDays
+				estimatedHours
+				executiveSummary
+				freeRetest
+				hasOpenRetest
+				hoursOrDays
+				id
+				integrationDeploy
+				inviteToken
+				isOpen
+				isPublic
+				label
+				language
+				mainRecommendations
+				microserviceFolder
+				negativeScope
+				notificationList
+				objective
+				pid
+				plannedStartedAt
+				playbookFinishedAt
+				playbookStartedAt
+				receiveDeploys
+				repositoryUrl
+				sacCode
+				sacProjectId
+				scope
+				secretId
+				sshPublicKey
+				startDate
+				status
+				students
+				subScopeId
+				totalAnalysisLines
+				totalChangedLines
+				totalNewLines
+				totalPublishedVulnerabilities
+				totalRemovedLines
+				type
+				updatedAt
+				userableId
+				userableType
+				waiting
+			}
+		}
+	}
+`
+
 const BANNER = `
 ____  _       _    __                       ____ _ _      _    _   _       
 |  _ \| | __ _| |_ / _| ___  _ __ _ __ ___  / ___| (_) ___| | _| | | |_ __  
@@ -231,6 +302,43 @@ func MainMenu() {
 	}
 }
 
+func AddPlatformProject() {
+
+	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
+
+	projectParameters := TypesPlatform.ProjectCreateParameters{TypesPlatform.ProjectCreateInputParameters{553, "teste tiago", "teste tiago", []int{475}, "teste", 10, "2023-04-16", "10"}}
+
+	parameters, _ := json.Marshal(projectParameters)
+	body, _ := json.Marshal(map[string]string{
+		"query":     CONVISO_PLATFORM_PROJECT_CREATE,
+		"variables": string(parameters),
+	})
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPost, "https://app.convisoappsec.com/graphql", payload)
+	if err != nil {
+		fmt.Println("Error")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("x-api-key", tokenPlatform)
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		fmt.Println("Error")
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	var result TypesPlatform.ProjectCreateResult
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	fmt.Println("Results - Requeriments - Project ", globals.Customer.Name)
+
+}
+
 func main() {
 	//MainMenu()
+	AddPlatformProject()
 }
