@@ -42,3 +42,21 @@ type ProjectCreateResult struct {
 	clientMutationId string
 	errors           []string
 }
+
+type ListReturn struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ListsReturn struct {
+	Lists []ListReturn `json:"lists"`
+}
+
+type TaskReturn struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type TasksReturn struct {
+	Tasks []TaskReturn `json:"tasks"`
+}

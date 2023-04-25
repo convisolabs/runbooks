@@ -10,6 +10,7 @@ import (
 	"time"
 	"utils/globals"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
 	TypesPlatform "integration.platform.clickup/types"
@@ -267,37 +268,92 @@ func SearchRequimentsPlatform() {
 
 }
 
-func MainMenu() {
-	var input int
-	for ok := true; ok; ok = (input != 0) {
-		fmt.Println("-----Main Menu-----")
-		fmt.Println("Project Selected: ", globals.Customer.Name)
-		fmt.Println("0 - Exit")
-		fmt.Println("1 - Menu Setup")
-		fmt.Println("2 - Menu Search Requirements Conviso Platform")
-		fmt.Println("3 - Menu Search Requirements Conviso Platform")
+func ClickUpAutomation() {
+	// listar todos os projetos/clientes
+	// consultar todas as tasks alteradas nas últimas 24hs e com o type task = 2 or 1 history
 
-		// fmt.Println("1 - Criar Tarefa ConvisoPlatform/ClickUp")
-		// fmt.Println("2 - Criar Tarefa ConvisoPlatform/ClickUp By CSV")
-		// fmt.Println("3 - Procurar código do Playbook/Requirements")
-		// fmt.Println("4 - Menu Project Hour")
-		fmt.Print("Enter the option: ")
-		n, err := fmt.Scan(&input)
+	var result TypesPlatform.ListsReturn
 
-		if n < 1 || err != nil {
-			fmt.Println("Invalid Input")
-			break
+	req, err := http.NewRequest(http.MethodGet, "https://api.clickup.com/api/v2/folder/114948796/list?archived=false", nil)
+	if err != nil {
+		// handle error
+	}
+
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error")
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	for i := 0; i < len(result.Lists); i++ {
+		var urlGetTasks bytes.Buffer
+		urlGetTasks.WriteString("https://api.clickup.com/api/v2/list/")
+		urlGetTasks.WriteString(result.Lists[i].Id)
+		urlGetTasks.WriteString("/task?custom_fields=[")
+		urlGetTasks.WriteString("{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\"=\",\"value\":\"2\"}")
+		urlGetTasks.WriteString(",{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\"=\",\"value\":\"1\"}")
+		urlGetTasks.WriteString("]")
+
+		req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
+		if err != nil {
+			// handle error
 		}
 
-		switch input {
-		case 0:
-			fmt.Println("Finished program!")
-		case 1:
-			MenuSetupConfig()
-		case 2:
-			MenuRequirementsSearch()
-		default:
-			fmt.Println("Invalid Input")
+		req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+		client := &http.Client{Timeout: time.Second * 10}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("Error")
+		}
+		data, _ := ioutil.ReadAll(resp.Body)
+
+		var resultTasks TypesPlatform.TasksReturn
+		json.Unmarshal([]byte(string(data)), &resultTasks)
+		fmt.Println("ClickUp Automation Started...")
+	}
+	//https://api.clickup.com/api/v2/list/900701540171/task?custom_fields=[{"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"2"}, {"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"1"}]
+	fmt.Println("ClickUp Automation Started...")
+}
+
+func MainMenu() {
+	var input int
+
+	fmt.Println(len(os.Args), os.Args)
+
+	if slices.Contains(os.Args, "-clickupautomation") {
+		ClickUpAutomation()
+	} else {
+
+		for ok := true; ok; ok = (input != 0) {
+			fmt.Println("-----Main Menu-----")
+			fmt.Println("Project Selected: ", globals.Customer.Name)
+			fmt.Println("0 - Exit")
+			fmt.Println("1 - Menu Setup")
+			fmt.Println("2 - Menu Search Requirements Conviso Platform")
+			fmt.Println("3 - Menu Search Requirements Conviso Platform")
+
+			fmt.Print("Enter the option: ")
+			n, err := fmt.Scan(&input)
+
+			if n < 1 || err != nil {
+				fmt.Println("Invalid Input")
+				break
+			}
+
+			switch input {
+			case 0:
+				fmt.Println("Finished program!")
+			case 1:
+				MenuSetupConfig()
+			case 2:
+				MenuRequirementsSearch()
+			default:
+				fmt.Println("Invalid Input")
+			}
 		}
 	}
 }
@@ -339,6 +395,6 @@ func AddPlatformProject() {
 }
 
 func main() {
-	//MainMenu()
-	AddPlatformProject()
+	MainMenu()
+	//AddPlatformProject()
 }
