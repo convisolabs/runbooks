@@ -2,9 +2,9 @@ module main
 
 go 1.20
 
-replace utils/globals => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/utils
+replace utils/globals => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/utils
 
-replace integration.platform.clickup/types => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/types
+replace integration.platform.clickup/types => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/types
 
 require (
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb // indirect

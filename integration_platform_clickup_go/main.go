@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 	"utils/globals"
 
@@ -268,9 +270,121 @@ func SearchRequimentsPlatform() {
 
 }
 
+func ReturnTask(taskId string) TypesPlatform.TaskReturn {
+	var urlGetTask bytes.Buffer
+	urlGetTask.WriteString("https://api.clickup.com/api/v2/task/")
+	urlGetTask.WriteString(taskId)
+
+	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
+	if err != nil {
+		// handle error
+	}
+
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error")
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	var task TypesPlatform.TaskReturn
+	json.Unmarshal([]byte(string(data)), &task)
+
+	return task
+
+}
+
+func RetNewStatus(statusPrincipal string, statusLinked string) string {
+
+	newReturn := statusPrincipal
+
+	switch statusLinked {
+	case "backlog":
+		break
+	case "to do":
+		if statusPrincipal == "backlog" {
+			newReturn = "to do"
+		}
+		break
+	case "in progress", "done":
+		if statusPrincipal == "backlog" || statusPrincipal == "to do" || statusPrincipal == "blocked" {
+			newReturn = "in progress"
+		}
+	}
+	return newReturn
+}
+
+func RequestPutTask(taskId string, request TypesPlatform.TaskRequest) TypesPlatform.TaskReturn {
+
+	var urlPutTask bytes.Buffer
+	urlPutTask.WriteString("https://api.clickup.com/api/v2/task/")
+	urlPutTask.WriteString(taskId)
+
+	body, _ := json.Marshal(request)
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPut, urlPutTask.String(), payload)
+	if err != nil {
+		fmt.Println("Error")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		fmt.Println("Error")
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	var result TypesPlatform.TaskReturn
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	return result
+}
+
+func RequestTaskTimeSpent(teamId string, request TypesPlatform.TaskTimeSpentRequest) TypesPlatform.TaskReturn {
+
+	var urlTaskTimeSpent bytes.Buffer
+	urlTaskTimeSpent.WriteString("https://api.clickup.com/api/v2/team/")
+	urlTaskTimeSpent.WriteString(teamId)
+	urlTaskTimeSpent.WriteString("/time_entries")
+
+	body, _ := json.Marshal(request)
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPost, urlTaskTimeSpent.String(), payload)
+	if err != nil {
+		fmt.Println("Error")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		fmt.Println("Error")
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	var result TypesPlatform.TaskReturn
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	return result
+}
+
 func ClickUpAutomation() {
 	// listar todos os projetos/clientes
 	// consultar todas as tasks alteradas nas últimas 24hs e com o type task = 2 or 1 history
+	// com a task vamos chegar na task principal
+	//atualizar duedate
+	//atualizar duedate
+	//depois timetracked
 
 	var result TypesPlatform.ListsReturn
 
@@ -290,30 +404,77 @@ func ClickUpAutomation() {
 	json.Unmarshal([]byte(string(data)), &result)
 
 	for i := 0; i < len(result.Lists); i++ {
-		var urlGetTasks bytes.Buffer
-		urlGetTasks.WriteString("https://api.clickup.com/api/v2/list/")
-		urlGetTasks.WriteString(result.Lists[i].Id)
-		urlGetTasks.WriteString("/task?custom_fields=[")
-		urlGetTasks.WriteString("{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\"=\",\"value\":\"2\"}")
-		urlGetTasks.WriteString(",{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\"=\",\"value\":\"1\"}")
-		urlGetTasks.WriteString("]")
+		if strings.ToLower(result.Lists[i].Name) == "testeprojetosconsulting" {
+			var urlGetTasks bytes.Buffer
+			urlGetTasks.WriteString("https://api.clickup.com/api/v2/list/")
+			urlGetTasks.WriteString(result.Lists[i].Id)
+			urlGetTasks.WriteString("/task?custom_fields=[")
+			urlGetTasks.WriteString("{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\">=\",\"value\":\"1\"}")
+			urlGetTasks.WriteString("]")
+			urlGetTasks.WriteString("&include_closed=true")
 
-		req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-		if err != nil {
-			// handle error
+			fmt.Println(urlGetTasks.String())
+
+			req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
+			if err != nil {
+				// handle error
+			}
+
+			req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+			client := &http.Client{Timeout: time.Second * 10}
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Println("Error")
+			}
+			data, _ := ioutil.ReadAll(resp.Body)
+
+			var resultTasks TypesPlatform.TasksReturn
+			json.Unmarshal([]byte(string(data)), &resultTasks)
+
+			for j := 0; j < len(resultTasks.Tasks); j++ {
+				//vou achar a task principal
+				taskPrincipal := ReturnTask(resultTasks.Tasks[j].LinkedTasks[0].TaskId)
+				var taskAux TypesPlatform.TaskReturn
+				allSubTasksDone := true
+				var timeSpent int64
+
+				var requestTask TypesPlatform.TaskRequest
+
+				for k := 0; k < len(taskPrincipal.LinkedTasks); k++ {
+					taskAux = ReturnTask(taskPrincipal.LinkedTasks[k].LinkId)
+					auxDuoDate, _ := strconv.ParseInt(taskAux.DueDate, 10, 64)
+					requestTask.TimeEstimate = requestTask.TimeEstimate + taskAux.TimeEstimate
+					timeSpent = timeSpent + taskAux.TimeSpent
+					if auxDuoDate > requestTask.DueDate {
+						requestTask.DueDate = auxDuoDate
+					}
+					if taskAux.Status.Status != "done" {
+						allSubTasksDone = false
+					}
+				}
+
+				if allSubTasksDone {
+					var taskTimeSpentRequest TypesPlatform.TaskTimeSpentRequest
+					taskTimeSpentRequest.Duration = timeSpent - taskPrincipal.TimeSpent
+					taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
+					taskTimeSpentRequest.TaskId = taskPrincipal.Id
+					requestTask.Status = "done"
+					RequestTaskTimeSpent(taskPrincipal.TeamId, taskTimeSpentRequest)
+					//atualizar o valor do task
+				} else {
+					requestTask.Status = RetNewStatus(taskPrincipal.Status.Status, resultTasks.Tasks[j].Status.Status)
+				}
+
+				teste := RequestPutTask(taskPrincipal.Id, requestTask)
+
+				println(teste.Id)
+				fmt.Println("Sair do For")
+			}
+
+			fmt.Println("Sair do sistema")
+
 		}
 
-		req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-		client := &http.Client{Timeout: time.Second * 10}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Error")
-		}
-		data, _ := ioutil.ReadAll(resp.Body)
-
-		var resultTasks TypesPlatform.TasksReturn
-		json.Unmarshal([]byte(string(data)), &resultTasks)
-		fmt.Println("ClickUp Automation Started...")
 	}
 	//https://api.clickup.com/api/v2/list/900701540171/task?custom_fields=[{"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"2"}, {"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"1"}]
 	fmt.Println("ClickUp Automation Started...")

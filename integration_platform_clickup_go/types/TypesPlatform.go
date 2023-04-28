@@ -52,11 +52,40 @@ type ListsReturn struct {
 	Lists []ListReturn `json:"lists"`
 }
 
+type TaskLinkedTasks struct {
+	TaskId string `json:"task_id"`
+	LinkId string `json:"link_id"`
+}
+
+type TaskStatusReturn struct {
+	Status string `json:"status"`
+}
+
 type TaskReturn struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id           string            `json:"id"`
+	Name         string            `json:"name"`
+	Status       TaskStatusReturn  `json:"status"`
+	DueDate      string            `json:"due_date"`
+	TimeEstimate int64             `json:"time_estimate"`
+	SubTasks     []TaskReturn      `json:"subtasks"`
+	LinkedTasks  []TaskLinkedTasks `json:"linked_tasks"`
+	TeamId       string            `json:"team_id"`
+	TimeSpent    int64             `json:"time_spent"`
 }
 
 type TasksReturn struct {
 	Tasks []TaskReturn `json:"tasks"`
+}
+
+type TaskRequest struct {
+	DueDate      int64  `json:"due_date"`
+	DueDateTime  bool   `json:"due_date_time"`
+	TimeEstimate int64  `json:"time_estimate"`
+	Status       string `json:"status"`
+}
+
+type TaskTimeSpentRequest struct {
+	Start    int64  `json:"start"`
+	Duration int64  `json:"duration"`
+	TaskId   string `json:"tid"`
 }
