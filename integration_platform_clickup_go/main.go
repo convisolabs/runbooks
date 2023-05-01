@@ -7,15 +7,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"time"
-	"utils/globals"
 
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
-	TypesPlatform "integration.platform.clickup/types"
+	ServicesClickup "integration.platform.clickup/services/services_clickup"
+	TypesPlatform "integration.platform.clickup/types/types_platform"
+	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 // criar projeto no platform
@@ -138,7 +137,7 @@ func LoadProjects() {
 	}
 
 	// Create a struct to hold the YAML data
-	var projects []globals.CustomerType
+	var projects []VariablesGlobal.CustomerType
 
 	// Unmarshal the YAML data into the struct
 	err = yaml.Unmarshal(data, &projects)
@@ -161,7 +160,7 @@ func LoadProjects() {
 		return
 	}
 
-	globals.Customer = projects[input]
+	VariablesGlobal.Customer = projects[input]
 
 }
 
@@ -169,7 +168,7 @@ func MenuSetupConfig() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Menu Config-----")
-		fmt.Println("Project Selected: ", globals.Customer.Name)
+		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
 		fmt.Println("0 - Previous Menu")
 		fmt.Println("1 - Choose Project Work")
 		fmt.Print("Enter the option: ")
@@ -193,7 +192,7 @@ func MenuRequirementsSearch() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Menu Requirements Search-----")
-		fmt.Println("Project Selected: ", globals.Customer.Name)
+		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
 		fmt.Println("0 - Previous Menu")
 		fmt.Println("1 - Search Requirements")
 		fmt.Print("Enter the option: ")
@@ -227,7 +226,7 @@ func SearchRequimentsPlatform() {
 	var result TypesPlatform.RequirementsReturnType
 	for i := 0; i <= result.Data.Playbooks.Metadata.TotalPages; i++ {
 
-		parameters, _ := json.Marshal(globals.RequirementsParametersType{CompanyId: globals.Customer.PlatformID, Page: i + 1, Requirement: reqSearch})
+		parameters, _ := json.Marshal(VariablesGlobal.RequirementsParametersType{CompanyId: VariablesGlobal.Customer.PlatformID, Page: i + 1, Requirement: reqSearch})
 		body, _ := json.Marshal(map[string]string{
 			"query":     CONVISO_PLATFORM_REQUIREMENTS_QUERY,
 			"variables": string(parameters),
@@ -251,7 +250,7 @@ func SearchRequimentsPlatform() {
 
 		json.Unmarshal([]byte(string(data)), &result)
 
-		fmt.Println("Results - Requeriments - Project ", globals.Customer.Name)
+		fmt.Println("Results - Requeriments - Project ", VariablesGlobal.Customer.Name)
 		for i := 0; i < len(result.Data.Playbooks.Collection)-1; i++ {
 			fmt.Println("Requiment ID: ", result.Data.Playbooks.Collection[i].Id, "; Requirement Name:", result.Data.Playbooks.Collection[i].Label)
 		}
@@ -270,232 +269,24 @@ func SearchRequimentsPlatform() {
 
 }
 
-func ReturnTask(taskId string) TypesPlatform.TaskReturn {
-	var urlGetTask bytes.Buffer
-	urlGetTask.WriteString("https://api.clickup.com/api/v2/task/")
-	urlGetTask.WriteString(taskId)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
-	if err != nil {
-		// handle error
-	}
-
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error")
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	var task TypesPlatform.TaskReturn
-	json.Unmarshal([]byte(string(data)), &task)
-
-	return task
-
-}
-
-func RetNewStatus(statusPrincipal string, statusLinked string) string {
-
-	newReturn := statusPrincipal
-
-	switch statusLinked {
-	case "backlog":
-		break
-	case "to do":
-		if statusPrincipal == "backlog" {
-			newReturn = "to do"
-		}
-		break
-	case "in progress", "done":
-		if statusPrincipal == "backlog" || statusPrincipal == "to do" || statusPrincipal == "blocked" {
-			newReturn = "in progress"
-		}
-	}
-	return newReturn
-}
-
-func RequestPutTask(taskId string, request TypesPlatform.TaskRequest) TypesPlatform.TaskReturn {
-
-	var urlPutTask bytes.Buffer
-	urlPutTask.WriteString("https://api.clickup.com/api/v2/task/")
-	urlPutTask.WriteString(taskId)
-
-	body, _ := json.Marshal(request)
-
-	payload := bytes.NewBuffer(body)
-	req, err := http.NewRequest(http.MethodPut, urlPutTask.String(), payload)
-	if err != nil {
-		fmt.Println("Error")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	defer req.Body.Close()
-	if err != nil {
-		fmt.Println("Error")
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	var result TypesPlatform.TaskReturn
-
-	json.Unmarshal([]byte(string(data)), &result)
-
-	return result
-}
-
-func RequestTaskTimeSpent(teamId string, request TypesPlatform.TaskTimeSpentRequest) TypesPlatform.TaskReturn {
-
-	var urlTaskTimeSpent bytes.Buffer
-	urlTaskTimeSpent.WriteString("https://api.clickup.com/api/v2/team/")
-	urlTaskTimeSpent.WriteString(teamId)
-	urlTaskTimeSpent.WriteString("/time_entries")
-
-	body, _ := json.Marshal(request)
-
-	payload := bytes.NewBuffer(body)
-	req, err := http.NewRequest(http.MethodPost, urlTaskTimeSpent.String(), payload)
-	if err != nil {
-		fmt.Println("Error")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	defer req.Body.Close()
-	if err != nil {
-		fmt.Println("Error")
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	var result TypesPlatform.TaskReturn
-
-	json.Unmarshal([]byte(string(data)), &result)
-
-	return result
-}
-
-func ClickUpAutomation() {
-	// listar todos os projetos/clientes
-	// consultar todas as tasks alteradas nas últimas 24hs e com o type task = 2 or 1 history
-	// com a task vamos chegar na task principal
-	//atualizar duedate
-	//atualizar duedate
-	//depois timetracked
-
-	var result TypesPlatform.ListsReturn
-
-	req, err := http.NewRequest(http.MethodGet, "https://api.clickup.com/api/v2/folder/114948796/list?archived=false", nil)
-	if err != nil {
-		// handle error
-	}
-
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error")
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	json.Unmarshal([]byte(string(data)), &result)
-
-	for i := 0; i < len(result.Lists); i++ {
-		if strings.ToLower(result.Lists[i].Name) == "testeprojetosconsulting" {
-			var urlGetTasks bytes.Buffer
-			urlGetTasks.WriteString("https://api.clickup.com/api/v2/list/")
-			urlGetTasks.WriteString(result.Lists[i].Id)
-			urlGetTasks.WriteString("/task?custom_fields=[")
-			urlGetTasks.WriteString("{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\">=\",\"value\":\"1\"}")
-			urlGetTasks.WriteString("]")
-			urlGetTasks.WriteString("&include_closed=true")
-
-			fmt.Println(urlGetTasks.String())
-
-			req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-			if err != nil {
-				// handle error
-			}
-
-			req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-			client := &http.Client{Timeout: time.Second * 10}
-			resp, err := client.Do(req)
-			if err != nil {
-				fmt.Println("Error")
-			}
-			data, _ := ioutil.ReadAll(resp.Body)
-
-			var resultTasks TypesPlatform.TasksReturn
-			json.Unmarshal([]byte(string(data)), &resultTasks)
-
-			for j := 0; j < len(resultTasks.Tasks); j++ {
-				//vou achar a task principal
-				taskPrincipal := ReturnTask(resultTasks.Tasks[j].LinkedTasks[0].TaskId)
-				var taskAux TypesPlatform.TaskReturn
-				allSubTasksDone := true
-				var timeSpent int64
-
-				var requestTask TypesPlatform.TaskRequest
-
-				for k := 0; k < len(taskPrincipal.LinkedTasks); k++ {
-					taskAux = ReturnTask(taskPrincipal.LinkedTasks[k].LinkId)
-					auxDuoDate, _ := strconv.ParseInt(taskAux.DueDate, 10, 64)
-					requestTask.TimeEstimate = requestTask.TimeEstimate + taskAux.TimeEstimate
-					timeSpent = timeSpent + taskAux.TimeSpent
-					if auxDuoDate > requestTask.DueDate {
-						requestTask.DueDate = auxDuoDate
-					}
-					if taskAux.Status.Status != "done" {
-						allSubTasksDone = false
-					}
-				}
-
-				if allSubTasksDone {
-					var taskTimeSpentRequest TypesPlatform.TaskTimeSpentRequest
-					taskTimeSpentRequest.Duration = timeSpent - taskPrincipal.TimeSpent
-					taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
-					taskTimeSpentRequest.TaskId = taskPrincipal.Id
-					requestTask.Status = "done"
-					RequestTaskTimeSpent(taskPrincipal.TeamId, taskTimeSpentRequest)
-					//atualizar o valor do task
-				} else {
-					requestTask.Status = RetNewStatus(taskPrincipal.Status.Status, resultTasks.Tasks[j].Status.Status)
-				}
-
-				teste := RequestPutTask(taskPrincipal.Id, requestTask)
-
-				println(teste.Id)
-				fmt.Println("Sair do For")
-			}
-
-			fmt.Println("Sair do sistema")
-
-		}
-
-	}
-	//https://api.clickup.com/api/v2/list/900701540171/task?custom_fields=[{"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"2"}, {"field_id":"664816bc-a899-45ec-9801-5a1e5be9c5f6","operator":"=","value":"1"}]
-	fmt.Println("ClickUp Automation Started...")
-}
-
 func MainMenu() {
 	var input int
 
 	fmt.Println(len(os.Args), os.Args)
 
 	if slices.Contains(os.Args, "-clickupautomation") {
-		ClickUpAutomation()
+		ServicesClickup.ClickUpAutomation(false)
 	} else {
 
 		for ok := true; ok; ok = (input != 0) {
 			fmt.Println("-----Main Menu-----")
-			fmt.Println("Project Selected: ", globals.Customer.Name)
+			fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
 			fmt.Println("0 - Exit")
-			fmt.Println("1 - Menu Setup")
-			fmt.Println("2 - Menu Search Requirements Conviso Platform")
-			fmt.Println("3 - Menu Search Requirements Conviso Platform")
+			fmt.Println("1 - Atualizar Projetos ClickUp")
+			fmt.Println("2 - Verificar Projetos ClickUp")
+			// fmt.Println("1 - Menu Setup")
+			// fmt.Println("2 - Menu Search Requirements Conviso Platform")
+			// fmt.Println("3 - Create Project Conviso Platform/ClickUp")
 
 			fmt.Print("Enter the option: ")
 			n, err := fmt.Scan(&input)
@@ -509,9 +300,13 @@ func MainMenu() {
 			case 0:
 				fmt.Println("Finished program!")
 			case 1:
-				MenuSetupConfig()
+				ServicesClickup.ClickUpAutomation(false)
 			case 2:
-				MenuRequirementsSearch()
+				ServicesClickup.ClickUpAutomation(true)
+			// case 1:
+			// 	MenuSetupConfig()
+			// case 2:
+			// 	MenuRequirementsSearch()
 			default:
 				fmt.Println("Invalid Input")
 			}
@@ -551,7 +346,7 @@ func AddPlatformProject() {
 
 	json.Unmarshal([]byte(string(data)), &result)
 
-	fmt.Println("Results - Requeriments - Project ", globals.Customer.Name)
+	fmt.Println("Results - Requeriments - Project ", VariablesGlobal.Customer.Name)
 
 }
 
