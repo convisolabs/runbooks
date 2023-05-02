@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	TypesClickup "integration.platform.clickup/types/types_clickup"
+	"integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
 )
 
@@ -28,7 +30,12 @@ func ClickUpAutomation(justVerify bool) {
 
 	fmt.Println("...Searching valid list...")
 	for i := 0; i < len(lists.Lists); i++ {
-		if strings.Contains(strings.ToLower(lists.Lists[i].Name), "testeprojetos") {
+
+		fmt.Println("Found List ", lists.Lists[i].Name)
+
+		if functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, functions.LoadCustomerByYamlFile()) {
+
+			var sliceEpicId []string
 
 			fmt.Println("Found valid list ", lists.Lists[i].Name)
 
@@ -42,7 +49,32 @@ func ClickUpAutomation(justVerify bool) {
 			for j := 0; j < len(tasks.Tasks); j++ {
 				fmt.Println("Task ", j+1, "/", len(tasks.Tasks), " - ", tasks.Tasks[j].Name)
 
-				taskEpic, err := ReturnTask(tasks.Tasks[j].LinkedTasks[0].TaskId)
+				auxEpicTaskId := ""
+
+				if len(tasks.Tasks[j].LinkedTasks) == 0 {
+					fmt.Println("Error 0 epics: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					continue
+				}
+
+				if len(tasks.Tasks[j].LinkedTasks) > 1 {
+					fmt.Println("Error 2 epics: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					continue
+				}
+
+				//dependendo a ordem que vc linkar as tarefas ele vai jogar no linkid ou no taskid
+				if tasks.Tasks[j].Id == tasks.Tasks[j].LinkedTasks[0].TaskId {
+					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].LinkId
+				} else {
+					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].TaskId
+				}
+
+				if slices.Contains(sliceEpicId, auxEpicTaskId) {
+					continue
+				}
+
+				sliceEpicId = append(sliceEpicId, auxEpicTaskId)
+
+				taskEpic, err := ReturnTask(auxEpicTaskId)
 				if err != nil {
 					fmt.Println("Error return task: ", err.Error())
 					return
@@ -70,7 +102,16 @@ func ChangeEpicTask(taskEpic TypesClickup.TaskResponse, taskTask TypesClickup.Ta
 	var requestTask TypesClickup.TaskRequest
 
 	for k := 0; k < len(taskEpic.LinkedTasks); k++ {
-		taskAux, err := ReturnTask(taskEpic.LinkedTasks[k].LinkId)
+
+		auxTaskId := ""
+
+		if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
+			auxTaskId = taskEpic.LinkedTasks[k].TaskId
+		} else {
+			auxTaskId = taskEpic.LinkedTasks[k].LinkId
+		}
+
+		taskAux, err := ReturnTask(auxTaskId)
 		if err != nil {
 			return errors.New("Error taskAux: " + err.Error())
 		}
@@ -113,14 +154,40 @@ func ChangeEpicTask(taskEpic TypesClickup.TaskResponse, taskTask TypesClickup.Ta
 
 func VerifyTasks(taskEpic TypesClickup.TaskResponse) error {
 
+	if len(taskEpic.LinkedTasks) == 0 {
+		fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", "Nenhuma subtarefa lincada")
+	}
+
 	for k := 0; k < len(taskEpic.LinkedTasks); k++ {
-		taskAux, err := ReturnTask(taskEpic.LinkedTasks[k].LinkId)
+		auxTaskId := ""
+
+		if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
+			auxTaskId = taskEpic.LinkedTasks[k].TaskId
+		} else {
+			auxTaskId = taskEpic.LinkedTasks[k].LinkId
+		}
+
+		taskAux, err := ReturnTask(auxTaskId)
 		if err != nil {
 			return errors.New("Error taskAux: " + err.Error())
 		}
 
-		if taskAux.DueDate == "" || taskAux.StartDate == "" || taskAux.TimeEstimate == 0 || (taskAux.Status.Status == "done") && taskAux.TimeSpent == 0 {
-			fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name)
+		if strings.ToLower(taskAux.Status.Status) != "backlog" {
+			if taskAux.DueDate == "" {
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "DueDate empty")
+			}
+
+			if taskAux.StartDate == "" {
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "StartDate empty")
+			}
+
+			if taskAux.TimeEstimate == 0 {
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "TimeEstimate empty")
+			}
+
+			if taskAux.Status.Status == "done" && taskAux.TimeSpent == 0 {
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "TimeSpent empty")
+			}
 		}
 	}
 

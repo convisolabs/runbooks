@@ -272,8 +272,6 @@ func SearchRequimentsPlatform() {
 func MainMenu() {
 	var input int
 
-	fmt.Println(len(os.Args), os.Args)
-
 	if slices.Contains(os.Args, "-clickupautomation") {
 		ServicesClickup.ClickUpAutomation(false)
 	} else {
