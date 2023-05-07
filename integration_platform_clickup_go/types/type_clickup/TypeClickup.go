@@ -1,4 +1,4 @@
-package TypesClickup
+package TypeClickup
 
 type ListResponse struct {
 	Id   string `json:"id"`

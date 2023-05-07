@@ -1,4 +1,4 @@
-package ServicesClickup
+package ServiceClickup
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
-	TypesClickup "integration.platform.clickup/types/types_clickup"
-	"integration.platform.clickup/utils/functions"
+	TypesClickup "integration.platform.clickup/types/type_clickup"
+	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
 )
 
@@ -33,7 +33,7 @@ func ClickUpAutomation(justVerify bool) {
 
 		fmt.Println("Found List ", lists.Lists[i].Name)
 
-		if functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, functions.LoadCustomerByYamlFile()) {
+		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, Functions.LoadCustomerByYamlFile()) {
 
 			var sliceEpicId []string
 

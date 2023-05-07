@@ -1,121 +1,18 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"time"
 
 	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v3"
 
-	ServicesClickup "integration.platform.clickup/services/services_clickup"
-	TypesPlatform "integration.platform.clickup/types/types_platform"
+	ServicesClickup "integration.platform.clickup/services/service_clickup"
+	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
+	TypePlatform "integration.platform.clickup/types/type_platform"
+	Functions "integration.platform.clickup/utils/functions"
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
-
-// criar projeto no platform
-// consultor projeto criado e pegar os requirements
-// criar projeto no clickup com subtasks do requirements
-
-const CONVISO_PLATFORM_REQUIREMENTS_QUERY = `
-	query Playbooks($CompanyId:ID!,$Requirement:String,$Page:Int){
-	  playbooks(id: $CompanyId, page: $Page, limit: 10, params: {
-	    labelCont:$Requirement
-	  }) {
-	    collection {
-	      checklistTypeId
-	      companyId
-	      createdAt
-	      deletedAt
-	      description
-	      id
-	      label
-	      updatedAt
-	    }
-	    metadata {
-	      currentPage
-	      limitValue
-	      totalCount
-	      totalPages
-	    }
-	  }
-	}
-`
-
-const CONVISO_PLATFORM_PROJECT_CREATE = `
-	mutation CreateProject($input:CreateProjectInput!)
-	{
-		createProject(
-		input: $input
-		) 
-		{
-			clientMutationId
-			errors
-			project 
-			{
-				apiCode
-				apiResponseReview
-				closeComments
-				companyId
-				connectivity
-				continuousDelivery
-				contractedHours
-				createdAt
-				deploySendFrequency
-				dueDate
-				endDate
-				environmentInvaded
-				estimatedDays
-				estimatedHours
-				executiveSummary
-				freeRetest
-				hasOpenRetest
-				hoursOrDays
-				id
-				integrationDeploy
-				inviteToken
-				isOpen
-				isPublic
-				label
-				language
-				mainRecommendations
-				microserviceFolder
-				negativeScope
-				notificationList
-				objective
-				pid
-				plannedStartedAt
-				playbookFinishedAt
-				playbookStartedAt
-				receiveDeploys
-				repositoryUrl
-				sacCode
-				sacProjectId
-				scope
-				secretId
-				sshPublicKey
-				startDate
-				status
-				students
-				subScopeId
-				totalAnalysisLines
-				totalChangedLines
-				totalNewLines
-				totalPublishedVulnerabilities
-				totalRemovedLines
-				type
-				updatedAt
-				userableId
-				userableType
-				waiting
-			}
-		}
-	}
-`
 
 const BANNER = `
 ____  _       _    __                       ____ _ _      _    _   _       
@@ -126,25 +23,8 @@ ____  _       _    __                       ____ _ _      _    _   _
 																	 |_|    
 `
 
-//dog = strings.ReplaceAll(dog, "∎", "`")
-
 func LoadProjects() {
-	// Read the file
-	data, err := ioutil.ReadFile("projects.yaml")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// Create a struct to hold the YAML data
-	var projects []VariablesGlobal.CustomerType
-
-	// Unmarshal the YAML data into the struct
-	err = yaml.Unmarshal(data, &projects)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	projects := Functions.LoadCustomerByYamlFile()
 
 	fmt.Println("------Projets------")
 	// Print the data
@@ -205,68 +85,11 @@ func MenuRequirementsSearch() {
 		case 0:
 			break
 		case 1:
-			SearchRequimentsPlatform()
+			ServiceConvisoPlatform.SearchRequimentsPlatform()
 		default:
 			fmt.Println("Invalid Input")
 		}
 	}
-}
-
-func SearchRequimentsPlatform() {
-
-	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
-	var reqSearch string
-	fmt.Print("Enter part of the requirement: ")
-	n, err := fmt.Scan(&reqSearch)
-	if n < 1 || err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-
-	var result TypesPlatform.RequirementsReturnType
-	for i := 0; i <= result.Data.Playbooks.Metadata.TotalPages; i++ {
-
-		parameters, _ := json.Marshal(VariablesGlobal.RequirementsParametersType{CompanyId: VariablesGlobal.Customer.PlatformID, Page: i + 1, Requirement: reqSearch})
-		body, _ := json.Marshal(map[string]string{
-			"query":     CONVISO_PLATFORM_REQUIREMENTS_QUERY,
-			"variables": string(parameters),
-		})
-
-		payload := bytes.NewBuffer(body)
-		req, err := http.NewRequest(http.MethodPost, "https://app.convisoappsec.com/graphql", payload)
-		if err != nil {
-			fmt.Println("Error")
-		}
-
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("x-api-key", tokenPlatform)
-		client := &http.Client{Timeout: time.Second * 10}
-		resp, err := client.Do(req)
-		defer req.Body.Close()
-		if err != nil {
-			fmt.Println("Error")
-		}
-		data, _ := ioutil.ReadAll(resp.Body)
-
-		json.Unmarshal([]byte(string(data)), &result)
-
-		fmt.Println("Results - Requeriments - Project ", VariablesGlobal.Customer.Name)
-		for i := 0; i < len(result.Data.Playbooks.Collection)-1; i++ {
-			fmt.Println("Requiment ID: ", result.Data.Playbooks.Collection[i].Id, "; Requirement Name:", result.Data.Playbooks.Collection[i].Label)
-		}
-
-		if result.Data.Playbooks.Metadata.CurrentPage != result.Data.Playbooks.Metadata.TotalPages {
-			var input int
-			fmt.Print("See next results? 0 - no; 1 - yes")
-			fmt.Print("Enter the option: ")
-			fmt.Scan(&input)
-			if input == 0 {
-				break
-			}
-		}
-		result.Data.Playbooks.Metadata.TotalPages = result.Data.Playbooks.Metadata.TotalPages - 1
-	}
-
 }
 
 func MainMenu() {
@@ -282,9 +105,9 @@ func MainMenu() {
 			fmt.Println("0 - Exit")
 			fmt.Println("1 - Atualizar Projetos ClickUp")
 			fmt.Println("2 - Verificar Projetos ClickUp")
-			// fmt.Println("1 - Menu Setup")
-			// fmt.Println("2 - Menu Search Requirements Conviso Platform")
-			// fmt.Println("3 - Create Project Conviso Platform/ClickUp")
+			fmt.Println("3 - Menu Setup")
+			fmt.Println("4 - Menu Search Requirements Conviso Platform")
+			fmt.Println("5 - Create Project Conviso Platform/ClickUp")
 
 			fmt.Print("Enter the option: ")
 			n, err := fmt.Scan(&input)
@@ -301,10 +124,17 @@ func MainMenu() {
 				ServicesClickup.ClickUpAutomation(false)
 			case 2:
 				ServicesClickup.ClickUpAutomation(true)
-			// case 1:
-			// 	MenuSetupConfig()
-			// case 2:
-			// 	MenuRequirementsSearch()
+			case 3:
+				MenuSetupConfig()
+			case 4:
+				MenuRequirementsSearch()
+			case 5:
+				if VariablesGlobal.Customer.PlatformID == 0 {
+					fmt.Println("Nenhum projeto selecionado!")
+				} else {
+					CreateProject()
+				}
+
 			default:
 				fmt.Println("Invalid Input")
 			}
@@ -312,39 +142,55 @@ func MainMenu() {
 	}
 }
 
-func AddPlatformProject() {
+func CreateProject() {
 
-	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
+	playbookIds := ""
+	typeId := 10
 
-	projectParameters := TypesPlatform.ProjectCreateParameters{TypesPlatform.ProjectCreateInputParameters{553, "teste tiago", "teste tiago", []int{475}, "teste", 10, "2023-04-16", "10"}}
+	fmt.Print("Label: ")
+	label := Functions.GetTextWithSpace()
 
-	parameters, _ := json.Marshal(projectParameters)
-	body, _ := json.Marshal(map[string]string{
-		"query":     CONVISO_PLATFORM_PROJECT_CREATE,
-		"variables": string(parameters),
-	})
+	fmt.Print("Goal: ")
+	goal := Functions.GetTextWithSpace()
 
-	payload := bytes.NewBuffer(body)
-	req, err := http.NewRequest(http.MethodPost, "https://app.convisoappsec.com/graphql", payload)
-	if err != nil {
-		fmt.Println("Error")
+	fmt.Print("Scope: ")
+	scope := Functions.GetTextWithSpace()
+
+	fmt.Print("TypeId (Consulting = 10): ")
+	n, err := fmt.Scan(&typeId)
+	if n < 1 || err != nil {
+		fmt.Println("Invalid Input")
+		return
 	}
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("x-api-key", tokenPlatform)
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	defer req.Body.Close()
-	if err != nil {
-		fmt.Println("Error")
+	fmt.Print("Playbook (1;2;3): ")
+	n, err = fmt.Scan(&playbookIds)
+	if n < 1 || err != nil {
+		fmt.Println("Invalid Input")
+		return
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
 
-	var result TypesPlatform.ProjectCreateResult
+	// //primeiro lugar a criar no conviso platforme e depois no clickup
+	createConvisoPlatform := TypePlatform.ProjectCreateInputRequest{VariablesGlobal.Customer.PlatformID,
+		label, goal, scope, typeId,
+		Functions.ConvertStringToArrayInt(playbookIds),
+		time.Now().Add(time.Hour * 24).Format("2006-01-02"), "1"}
 
-	json.Unmarshal([]byte(string(data)), &result)
+	err = ServiceConvisoPlatform.AddPlatformProject(createConvisoPlatform)
 
-	fmt.Println("Results - Requeriments - Project ", VariablesGlobal.Customer.Name)
+	if err != nil {
+		fmt.Println("Error CreateProject: ", err.Error())
+	}
+
+	project, err := ServiceConvisoPlatform.ConfirmProjectCreate(VariablesGlobal.Customer.PlatformID, label)
+
+	if err != nil {
+		fmt.Println("Erro CreateProject: Contact the system administrator")
+	}
+
+	fmt.Println(project)
+
+	//precisa pegar o retorno do conviso platform e criar no clickup
 
 }
 

@@ -1,8 +1,12 @@
-package functions
+package Functions
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
@@ -38,4 +42,31 @@ func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []Var
 		}
 	}
 	return result
+}
+
+func ConvertStringToArrayInt(var1 string) []int {
+	var arrayRet []int
+
+	arrayStr := strings.Split(var1, ";")
+
+	for i := 0; i < len(arrayStr); i++ {
+		intAux, err := strconv.Atoi(arrayStr[i])
+		if err != nil {
+			fmt.Println("Error ConvertStringToArrayInt: ", err.Error())
+			return nil
+		}
+
+		arrayRet = append(arrayRet, intAux)
+	}
+
+	return arrayRet
+}
+
+func GetTextWithSpace() string {
+	ret := ""
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		ret = scanner.Text()
+	}
+	return ret
 }
