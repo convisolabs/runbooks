@@ -86,7 +86,7 @@ func MenuRequirementsSearch() {
 		case 0:
 			break
 		case 1:
-			ServiceConvisoPlatform.SearchRequimentsPlatform()
+			ServiceConvisoPlatform.InputSearchRequimentsPlatform()
 		default:
 			fmt.Println("Invalid Input")
 		}
@@ -247,6 +247,20 @@ func CreateProject() {
 }
 
 func main() {
+	//próximas tarefas
+	// listar os tipos do conviso platform
+	// setar os campos customizáveis na função create
+	// parametrizar tudo para utilização da função flags do golang
+
+	// 	var searchRequiments string
+
+	// 	flag.StringVar(&searchRequiments, "sr", "", "Search Conviso Platform Requirements")
+
+	// 	flag.Parse()
+
+	// 	if searchRequiments != "" {
+	// 		ServiceConvisoPlatform.SearchRequimentsPlatform(searchRequiments)
+	// 	} else {
 	MainMenu()
-	//AddPlatformProject()
+	// }
 }

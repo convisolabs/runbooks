@@ -134,14 +134,17 @@ func ChangeEpicTask(taskEpic TypesClickup.TaskResponse, taskTask TypesClickup.Ta
 	}
 
 	if allSubTasksDone {
+		requestTask.Status = "done"
+	} else {
+		requestTask.Status = RetNewStatus(taskEpic.Status.Status, taskTask.Status.Status)
+	}
+
+	if (timeSpent - taskEpic.TimeSpent) > 0 {
 		var taskTimeSpentRequest TypesClickup.TaskTimeSpentRequest
 		taskTimeSpentRequest.Duration = timeSpent - taskEpic.TimeSpent
 		taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
 		taskTimeSpentRequest.TaskId = taskEpic.Id
-		requestTask.Status = "done"
 		RequestTaskTimeSpent(taskEpic.TeamId, taskTimeSpentRequest)
-	} else {
-		requestTask.Status = RetNewStatus(taskEpic.Status.Status, taskTask.Status.Status)
 	}
 
 	err := RequestPutTask(taskEpic.Id, requestTask)

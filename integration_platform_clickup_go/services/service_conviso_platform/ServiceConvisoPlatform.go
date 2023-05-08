@@ -139,16 +139,7 @@ const CONVISO_PLATFORM_PROJECT_CREATE = `
 	}
 `
 
-func SearchRequimentsPlatform() {
-	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
-	var reqSearch string
-	fmt.Print("Enter part of the requirement: ")
-	n, err := fmt.Scan(&reqSearch)
-	if n < 1 || err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-
+func SearchRequimentsPlatform(reqSearch string) {
 	var result TypePlatform.RequirementsResponse
 	for i := 0; i <= result.Data.Playbooks.Metadata.TotalPages; i++ {
 		parameters, _ := json.Marshal(VariablesGlobal.RequirementsParametersType{CompanyId: VariablesGlobal.Customer.PlatformID, Page: i + 1, Requirement: reqSearch})
@@ -165,7 +156,7 @@ func SearchRequimentsPlatform() {
 		}
 
 		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("x-api-key", tokenPlatform)
+		req.Header.Add("x-api-key", os.Getenv("CONVISO_PLATFORM_TOKEN"))
 		client := &http.Client{Timeout: time.Second * 10}
 		resp, err := client.Do(req)
 		defer req.Body.Close()
@@ -193,7 +184,18 @@ func SearchRequimentsPlatform() {
 		}
 		result.Data.Playbooks.Metadata.TotalPages = result.Data.Playbooks.Metadata.TotalPages - 1
 	}
+}
 
+func InputSearchRequimentsPlatform() {
+	var reqSearch string
+	fmt.Print("Enter part of the requirement: ")
+	n, err := fmt.Scan(&reqSearch)
+	if n < 1 || err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+
+	SearchRequimentsPlatform(reqSearch)
 }
 
 func ConfirmProjectCreate(companyId int, label string) (TypePlatform.ProjectCollectionResponse, error) {
