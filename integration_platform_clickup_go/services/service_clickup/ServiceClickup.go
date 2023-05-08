@@ -16,6 +16,7 @@ import (
 	TypesClickup "integration.platform.clickup/types/type_clickup"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
+	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 func ClickUpAutomation(justVerify bool) {
@@ -350,4 +351,38 @@ func RequestTaskTimeSpent(teamId string, request TypesClickup.TaskTimeSpentReque
 	ioutil.ReadAll(resp.Body)
 
 	return nil
+}
+
+func TaskCreateRequest(request TypesClickup.TaskCreateRequest) (TypesClickup.TaskResponse, error) {
+	var result TypesClickup.TaskResponse
+	var urlCreateTask bytes.Buffer
+	urlCreateTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
+	urlCreateTask.WriteString("list/")
+	urlCreateTask.WriteString(VariablesGlobal.Customer.ClickUpListId)
+	urlCreateTask.WriteString("/task")
+
+	fmt.Println(urlCreateTask.String())
+
+	body, _ := json.Marshal(request)
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPost, urlCreateTask.String(), payload)
+	if err != nil {
+		return result, errors.New("Error TaskCreateRequest Request: " + err.Error())
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		return result, errors.New("Error TaskCreateRequest ClientDo: " + err.Error())
+	}
+
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	return result, nil
 }

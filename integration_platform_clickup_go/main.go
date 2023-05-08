@@ -9,6 +9,7 @@ import (
 
 	ServicesClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
+	TypeClickup "integration.platform.clickup/types/type_clickup"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
@@ -144,6 +145,14 @@ func MainMenu() {
 
 func CreateProject() {
 
+	// taskMainClickup, err := ServicesClickup.TaskCreateRequest(
+	// 	TypeClickup.TaskCreateRequest{
+	// 		"project.Label",
+	// 		"project.Scope",
+	// 		"backlog",
+	// 		true,
+	// 		""})
+
 	playbookIds := ""
 	typeId := 10
 
@@ -188,9 +197,52 @@ func CreateProject() {
 		fmt.Println("Erro CreateProject: Contact the system administrator")
 	}
 
-	fmt.Println(project)
+	// customFields := []TypeClickup.CustomFieldRequest{
+	// 	TypeClickup.CustomFieldRequest{
+	// 		"8e2863f4-e11f-409c-a373-893bc12200fb",
+	// 		"https://app.convisoappsec.com/scopes/" + string(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
+	// 	},
+	// 	TypeClickup.CustomFieldRequest{
+	// 		"664816bc-a899-45ec-9801-5a1e5be9c5f6",
+	// 		"0",
+	// 	},
+	// 	TypeClickup.CustomFieldRequest{
+	// 		"4493a404-3ef7-4d7a-91e4-830ebc666353",
+	// 		"1",
+	// 	},
+	// }
 
-	//precisa pegar o retorno do conviso platform e criar no clickup
+	//create main
+	taskMainClickup, err := ServicesClickup.TaskCreateRequest(
+		TypeClickup.TaskCreateRequest{
+			project.Label,
+			project.Scope,
+			"backlog",
+			true,
+			"",
+			""})
+
+	if err != nil {
+		fmt.Println("problem")
+	}
+
+	for i := 0; i < len(project.Activities); i++ {
+		_, err := ServicesClickup.TaskCreateRequest(
+			TypeClickup.TaskCreateRequest{
+				project.Activities[i].Title,
+				project.Activities[i].Description,
+				"backlog",
+				true,
+				taskMainClickup.Id,
+				taskMainClickup.Id})
+		if err != nil {
+			fmt.Println("problem for ", i)
+		}
+	}
+
+	//create subtasks
+	fmt.Println(project)
+	fmt.Println(taskMainClickup)
 
 }
 
