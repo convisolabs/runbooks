@@ -5,6 +5,11 @@ type MetadataResponse struct {
 	TotalPages  int `json:"totalPages"`
 }
 
+type RequirementsParameters struct {
+	CompanyId, Page int
+	Requirement     string
+}
+
 type RequirementsResponse struct {
 	Data RequirementsDataResponse `json:"data"`
 }
@@ -68,4 +73,29 @@ type ProjectsDataResponse struct {
 type ProjectsProjectsResponse struct {
 	Collection []ProjectCollectionResponse `json:"collection"`
 	Metadata   MetadataResponse            `json:"metadata"`
+}
+
+type ProjectType struct {
+	Id          string `json:"id"`
+	Label       string `json:"label"`
+	Code        string `json:"code"`
+	Description string `json:"description"`
+}
+
+type ProjectTypesResponse struct {
+	Data ProjectTypesDataResponse `json:"data"`
+}
+
+type ProjectTypesDataResponse struct {
+	ProjectTypes ProjectTypesCollectionMetadataResponse `json:"projectTypes"`
+}
+
+type ProjectTypesCollectionMetadataResponse struct {
+	Collection []ProjectType    `json:"collection"`
+	Metadata   MetadataResponse `json:"metadata"`
+}
+
+type ProjectTypeParameters struct {
+	Page        int
+	ProjectType string
 }

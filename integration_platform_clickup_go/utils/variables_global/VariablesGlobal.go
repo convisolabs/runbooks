@@ -6,9 +6,4 @@ type CustomerType struct {
 	Name          string `yaml:"name"`
 }
 
-type RequirementsParametersType struct {
-	CompanyId, Page int
-	Requirement     string
-}
-
 var Customer = CustomerType{0, "", "No selected project"}

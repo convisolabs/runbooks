@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	ServicesClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
@@ -69,24 +66,74 @@ func MenuSetupConfig() {
 	}
 }
 
-func MenuRequirementsSearch() {
+// func MenuRequirementsSearch() {
+// 	var input int
+// 	for ok := true; ok; ok = (input != 0) {
+// 		fmt.Println("-----Menu Requirements Search-----")
+// 		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
+// 		fmt.Println("0 - Previous Menu")
+// 		fmt.Println("1 - Search Requirements")
+// 		fmt.Print("Enter the option: ")
+// 		n, err := fmt.Scan(&input)
+// 		if n < 1 || err != nil {
+// 			fmt.Println("Invalid Input")
+// 			break
+// 		}
+// 		switch input {
+// 		case 0:
+// 			break
+// 		case 1:
+// 			ServiceConvisoPlatform.InputSearchRequimentsPlatform()
+// 		default:
+// 			fmt.Println("Invalid Input")
+// 		}
+// 	}
+// }
+
+func MenuClickup() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
-		fmt.Println("-----Menu Requirements Search-----")
-		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
+		fmt.Println("-----Menu Clickup-----")
 		fmt.Println("0 - Previous Menu")
-		fmt.Println("1 - Search Requirements")
+		fmt.Println("1 - Verification Tasks Clickup")
+		fmt.Println("2 - Update Tasks Clickup")
 		fmt.Print("Enter the option: ")
 		n, err := fmt.Scan(&input)
 		if n < 1 || err != nil {
 			fmt.Println("Invalid Input")
+		}
+		switch input {
+		case 0:
 			break
+		case 1:
+			ServicesClickup.ClickUpAutomation(true)
+		case 2:
+			ServicesClickup.ClickUpAutomation(false)
+		default:
+			fmt.Println("Invalid Input")
+		}
+	}
+}
+
+func MenuSearchConvisoPlatform() {
+	var input int
+	for ok := true; ok; ok = (input != 0) {
+		fmt.Println("-----Menu Search Conviso Platform-----")
+		fmt.Println("0 - Previous Menu")
+		fmt.Println("1 - Requirements")
+		fmt.Println("2 - Type Project")
+		fmt.Print("Enter the option: ")
+		n, err := fmt.Scan(&input)
+		if n < 1 || err != nil {
+			fmt.Println("Invalid Input")
 		}
 		switch input {
 		case 0:
 			break
 		case 1:
 			ServiceConvisoPlatform.InputSearchRequimentsPlatform()
+		case 2:
+			ServiceConvisoPlatform.InputSearchProjectTypesPlatform()
 		default:
 			fmt.Println("Invalid Input")
 		}
@@ -96,49 +143,40 @@ func MenuRequirementsSearch() {
 func MainMenu() {
 	var input int
 
-	if slices.Contains(os.Args, "-clickupautomation") {
-		ServicesClickup.ClickUpAutomation(false)
-	} else {
+	for ok := true; ok; ok = (input != 0) {
+		fmt.Println("-----Main Menu-----")
+		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
+		fmt.Println("0 - Exit")
+		fmt.Println("1 - Menu Clickup")
+		fmt.Println("2 - Menu Setup")
+		fmt.Println("3 - Create Project Conviso Platform/ClickUp")
+		fmt.Println("4 - Menu Search Conviso Platform")
 
-		for ok := true; ok; ok = (input != 0) {
-			fmt.Println("-----Main Menu-----")
-			fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
-			fmt.Println("0 - Exit")
-			fmt.Println("1 - Atualizar Projetos ClickUp")
-			fmt.Println("2 - Verificar Projetos ClickUp")
-			fmt.Println("3 - Menu Setup")
-			fmt.Println("4 - Menu Search Requirements Conviso Platform")
-			fmt.Println("5 - Create Project Conviso Platform/ClickUp")
+		fmt.Print("Enter the option: ")
+		n, err := fmt.Scan(&input)
 
-			fmt.Print("Enter the option: ")
-			n, err := fmt.Scan(&input)
+		if n < 1 || err != nil {
+			fmt.Println("Invalid Input")
+			break
+		}
 
-			if n < 1 || err != nil {
-				fmt.Println("Invalid Input")
-				break
+		switch input {
+		case 0:
+			fmt.Println("Finished program!")
+		case 1:
+			MenuClickup()
+		case 2:
+			MenuSetupConfig()
+		case 3:
+			if VariablesGlobal.Customer.PlatformID == 0 {
+				fmt.Println("No Project Selected!")
+			} else {
+				CreateProject()
 			}
-
-			switch input {
-			case 0:
-				fmt.Println("Finished program!")
-			case 1:
-				ServicesClickup.ClickUpAutomation(false)
-			case 2:
-				ServicesClickup.ClickUpAutomation(true)
-			case 3:
-				MenuSetupConfig()
-			case 4:
-				MenuRequirementsSearch()
-			case 5:
-				if VariablesGlobal.Customer.PlatformID == 0 {
-					fmt.Println("Nenhum projeto selecionado!")
-				} else {
-					CreateProject()
-				}
-
-			default:
-				fmt.Println("Invalid Input")
-			}
+		case 4:
+			MenuSearchConvisoPlatform()
+		default:
+			fmt.Println("Invalid Input")
 		}
 	}
 }
@@ -197,20 +235,20 @@ func CreateProject() {
 		fmt.Println("Erro CreateProject: Contact the system administrator")
 	}
 
-	// customFields := []TypeClickup.CustomFieldRequest{
-	// 	TypeClickup.CustomFieldRequest{
-	// 		"8e2863f4-e11f-409c-a373-893bc12200fb",
-	// 		"https://app.convisoappsec.com/scopes/" + string(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
-	// 	},
-	// 	TypeClickup.CustomFieldRequest{
-	// 		"664816bc-a899-45ec-9801-5a1e5be9c5f6",
-	// 		"0",
-	// 	},
-	// 	TypeClickup.CustomFieldRequest{
-	// 		"4493a404-3ef7-4d7a-91e4-830ebc666353",
-	// 		"1",
-	// 	},
-	// }
+	customFields := []TypeClickup.CustomFieldRequest{
+		TypeClickup.CustomFieldRequest{
+			"8e2863f4-e11f-409c-a373-893bc12200fb",
+			"https://app.convisoappsec.com/scopes/" + string(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
+		},
+		TypeClickup.CustomFieldRequest{
+			"664816bc-a899-45ec-9801-5a1e5be9c5f6",
+			"0",
+		},
+		TypeClickup.CustomFieldRequest{
+			"4493a404-3ef7-4d7a-91e4-830ebc666353",
+			"1",
+		},
+	}
 
 	//create main
 	taskMainClickup, err := ServicesClickup.TaskCreateRequest(
@@ -220,7 +258,8 @@ func CreateProject() {
 			"backlog",
 			true,
 			"",
-			""})
+			"",
+			customFields})
 
 	if err != nil {
 		fmt.Println("problem")
@@ -234,7 +273,8 @@ func CreateProject() {
 				"backlog",
 				true,
 				taskMainClickup.Id,
-				taskMainClickup.Id})
+				taskMainClickup.Id,
+				customFields})
 		if err != nil {
 			fmt.Println("problem for ", i)
 		}

@@ -50,13 +50,13 @@ type TaskTimeSpentRequest struct {
 }
 
 type TaskCreateRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	NotifyAll   bool   `json:"notify_all"`
-	Parent      string `json:"parent,omitempty"`
-	LinksTo     string `json:"links_to,omitempty"`
-	// CustomField []CustomFieldRequest `json:"custom_fields"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Status      string               `json:"status"`
+	NotifyAll   bool                 `json:"notify_all"`
+	Parent      string               `json:"parent,omitempty"`
+	LinksTo     string               `json:"links_to,omitempty"`
+	CustomField []CustomFieldRequest `json:"custom_fields"`
 }
 
 type CustomFieldRequest struct {
