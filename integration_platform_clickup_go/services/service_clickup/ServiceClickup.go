@@ -19,6 +19,54 @@ import (
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
+func RetCustomerPosition() (string, error) {
+	result := ""
+	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+
+	if err != nil {
+		return result, errors.New("Error RetCustomerPosition RequestCustomField: " + err.Error())
+	}
+
+	found := false
+	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+
+		if customFieldsResponse.Fields[i].Id == VariablesConstant.CLICKUP_CUSTOMER_FIELD_ID {
+			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+				if customFieldsResponse.Fields[i].TypeConfig.Options[j].Name == VariablesGlobal.Customer.Name {
+					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
+					found = true
+					break
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
+func RetCustomFieldCustomerPosition() (TypesClickup.CustomFieldsResponse, error) {
+	var result TypesClickup.CustomFieldsResponse
+	var urlGetTasks bytes.Buffer
+	urlGetTasks.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
+	urlGetTasks.WriteString("list/")
+	urlGetTasks.WriteString(VariablesGlobal.Customer.ClickUpListId)
+	urlGetTasks.WriteString("/field")
+
+	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
+	if err != nil {
+		return result, errors.New("Error RetCustomerPosition NewRequest: " + err.Error())
+	}
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	if err != nil {
+		return result, errors.New("Error RetCustomerPosition ClientDo: " + err.Error())
+	}
+	data, _ := ioutil.ReadAll(resp.Body)
+	json.Unmarshal([]byte(string(data)), &result)
+
+	return result, nil
+}
+
 func ClickUpAutomation(justVerify bool) {
 	fmt.Println("...Starting ClickUp Automation...")
 
@@ -378,6 +426,11 @@ func TaskCreateRequest(request TypesClickup.TaskCreateRequest) (TypesClickup.Tas
 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
+
+	if resp.StatusCode != 200 {
+		return result, errors.New("Error TaskCreateRequest Status Code: " + strconv.Itoa(resp.StatusCode))
+	}
+
 	defer req.Body.Close()
 	if err != nil {
 		return result, errors.New("Error TaskCreateRequest ClientDo: " + err.Error())

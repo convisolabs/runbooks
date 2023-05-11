@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	ServicesClickup "integration.platform.clickup/services/service_clickup"
@@ -182,17 +184,9 @@ func MainMenu() {
 }
 
 func CreateProject() {
-
-	// taskMainClickup, err := ServicesClickup.TaskCreateRequest(
-	// 	TypeClickup.TaskCreateRequest{
-	// 		"project.Label",
-	// 		"project.Scope",
-	// 		"backlog",
-	// 		true,
-	// 		""})
-
 	playbookIds := ""
 	typeId := 10
+	SubTaskReqActivies := "n"
 
 	fmt.Print("Label: ")
 	label := Functions.GetTextWithSpace()
@@ -217,7 +211,13 @@ func CreateProject() {
 		return
 	}
 
-	// //primeiro lugar a criar no conviso platforme e depois no clickup
+	fmt.Print("Create subtasks with requirements activities? (y or n)")
+	n, err = fmt.Scan(&SubTaskReqActivies)
+	if n < 1 || err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+
 	createConvisoPlatform := TypePlatform.ProjectCreateInputRequest{VariablesGlobal.Customer.PlatformID,
 		label, goal, scope, typeId,
 		Functions.ConvertStringToArrayInt(playbookIds),
@@ -233,21 +233,32 @@ func CreateProject() {
 
 	if err != nil {
 		fmt.Println("Erro CreateProject: Contact the system administrator")
+		return
 	}
 
-	customFields := []TypeClickup.CustomFieldRequest{
-		TypeClickup.CustomFieldRequest{
-			"8e2863f4-e11f-409c-a373-893bc12200fb",
-			"https://app.convisoappsec.com/scopes/" + string(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
-		},
+	CustomFieldCustomerPosition, err := ServicesClickup.RetCustomerPosition()
+	if err != nil {
+		fmt.Println("Error CreateProject: CustomerCustomField error...")
+		CustomFieldCustomerPosition = ""
+	}
+
+	customFieldCustomer := TypeClickup.CustomFieldRequest{
+		"4493a404-3ef7-4d7a-91e4-830ebc666353",
+		CustomFieldCustomerPosition,
+	}
+
+	customFieldUrlConvisoPlatform := TypeClickup.CustomFieldRequest{
+		"8e2863f4-e11f-409c-a373-893bc12200fb",
+		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
+	}
+
+	customFieldsMainTask := []TypeClickup.CustomFieldRequest{
+		customFieldUrlConvisoPlatform,
 		TypeClickup.CustomFieldRequest{
 			"664816bc-a899-45ec-9801-5a1e5be9c5f6",
 			"0",
 		},
-		TypeClickup.CustomFieldRequest{
-			"4493a404-3ef7-4d7a-91e4-830ebc666353",
-			"1",
-		},
+		customFieldCustomer,
 	}
 
 	//create main
@@ -259,36 +270,43 @@ func CreateProject() {
 			true,
 			"",
 			"",
-			customFields})
+			customFieldsMainTask})
 
 	if err != nil {
-		fmt.Println("problem")
+		fmt.Println("Error CreateProject: Problem create ClickUpTask :: ", err.Error())
+		return
 	}
 
-	for i := 0; i < len(project.Activities); i++ {
-		_, err := ServicesClickup.TaskCreateRequest(
-			TypeClickup.TaskCreateRequest{
-				project.Activities[i].Title,
-				project.Activities[i].Description,
-				"backlog",
-				true,
-				taskMainClickup.Id,
-				taskMainClickup.Id,
-				customFields})
-		if err != nil {
-			fmt.Println("problem for ", i)
+	if strings.ToLower(SubTaskReqActivies) == "y" {
+		customFieldsSubTask := []TypeClickup.CustomFieldRequest{
+			customFieldUrlConvisoPlatform,
+			TypeClickup.CustomFieldRequest{
+				"664816bc-a899-45ec-9801-5a1e5be9c5f6",
+				"2",
+			},
+			customFieldCustomer}
+
+		for i := 0; i < len(project.Activities); i++ {
+			_, err := ServicesClickup.TaskCreateRequest(
+				TypeClickup.TaskCreateRequest{
+					project.Activities[i].Title,
+					project.Activities[i].Description,
+					"backlog",
+					true,
+					taskMainClickup.Id,
+					taskMainClickup.Id,
+					customFieldsSubTask})
+			if err != nil {
+				fmt.Println("Error CreateProject: Problem create ClickUp SubTask ", project.Activities[i].Title)
+			}
 		}
 	}
 
-	//create subtasks
-	fmt.Println(project)
-	fmt.Println(taskMainClickup)
-
+	fmt.Println("Create Task Success!")
 }
 
 func main() {
 	//próximas tarefas
-	// listar os tipos do conviso platform
 	// setar os campos customizáveis na função create
 	// parametrizar tudo para utilização da função flags do golang
 

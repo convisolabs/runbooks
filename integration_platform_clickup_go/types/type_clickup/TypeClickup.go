@@ -63,3 +63,24 @@ type CustomFieldRequest struct {
 	Id    string `json:"id"`
 	Value string `json:"value"`
 }
+
+type CustomFieldsResponse struct {
+	Fields []CustomField `json:"fields"`
+}
+
+type CustomField struct {
+	Id         string                `json:"id"`
+	Name       string                `json:"name"`
+	TypeConfig CustomFieldTypeConfig `json:"type_config"`
+}
+
+type CustomFieldTypeConfig struct {
+	Options []CustomFieldOptions `json:"options"`
+}
+
+type CustomFieldOptions struct {
+	Id         string `json:"id"`
+	Name       string `json:"name"`
+	Color      string `json:"color"`
+	OrderIndex int    `json:"orderindex"`
+}
