@@ -32,7 +32,7 @@ func RetCustomerPosition() (string, error) {
 
 		if customFieldsResponse.Fields[i].Id == VariablesConstant.CLICKUP_CUSTOMER_FIELD_ID {
 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-				if customFieldsResponse.Fields[i].TypeConfig.Options[j].Name == VariablesGlobal.Customer.Name {
+				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(VariablesGlobal.Customer.Name) {
 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
 					found = true
 					break
@@ -257,7 +257,7 @@ func ReturnTasks(listId string) (TypesClickup.TasksResponse, error) {
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
-	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*24).UTC().UnixMilli(), 10))
+	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*72).UTC().UnixMilli(), 10))
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
 	if err != nil {
