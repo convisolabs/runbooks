@@ -307,7 +307,7 @@ func CreateProject() {
 
 func main() {
 	//próximas tarefas
-	// setar os campos customizáveis na função create
+	// quando atualizar uma tarefa tentar mudar o status do conviso platform
 	// parametrizar tudo para utilização da função flags do golang
 
 	// 	var searchRequiments string

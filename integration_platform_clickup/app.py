@@ -22,8 +22,7 @@ CLICKUP_URI = 'https://api.clickup.com/api/v2/'
 CLICKUP_TOKEN = os.environ.get('CLICKUP_TOKEN','token')
 CLICKUP_STATUS_CODE = 200
 CLICKUP_HEADERS = {'Content-Type':'application/json','Authorization':CLICKUP_TOKEN}
-#CLICKUP_LIST_PROJECTS = 163176498
-CLICKUP_SPACE_ID_CONSULTING_PROJETOS = 114948796
+CLICKUP_LIST_PROJECTS = 163176498
 
 ClickupIdCustomFieldCustomer = 0
 ClickupIdCustomFieldDemandType = 0
@@ -32,10 +31,8 @@ ClickupIdCustomFieldConvisoLink = 0
 
 dictClickUpCustomer = dict()
 dictClickUpDemandType = dict()
-dictClickUpConsultingProjetosList = dict()
 dictConvisoPlatformProjectTypes = dict()
 dictConvisoPlatformRequirements = dict()
-
 
 
 CONVISO_PLATFORM_REQUIREMENTS_QUERY = '''
@@ -183,6 +180,8 @@ def runMutationError(uri, query, headers, variables):
     request = requests.post(uri, json={'query':query, 'variables':variables}, headers=headers)
     teste = ""
 
+
+
 def SelectTypeId():
     for projectType in dictConvisoPlatformProjectTypes:
         print(f'{projectType};{dictConvisoPlatformProjectTypes[projectType]}')
@@ -206,12 +205,6 @@ def SelectCustomFieldDemandType():
 
 def SelectProject():
     return input('Conviso Platform Project ID:')
-
-# def SelectProjectClickUpList():
-#     uri = f'{CLICKUP_URI}space/{CLICKUP_SPACE_ID_CONSULTING_PROJETOS}/folder?archived=false'
-#     lstProject = runCallHttpMethod(HTTP_METHOD.GET, uri, CLICKUP_HEADERS, CLICKUP_STATUS_CODE)
-#     for project in lstProject:
-
 
 def FillConvisoPlatformFieldsAndClickUpCsv():
     arquivoCSV = input('Digite o caminho completo do arquivo CSV: ')
@@ -274,8 +267,8 @@ def FillConvisoPlatformFieldsAndClickUpCsv():
                 }         
                 variables = {'input': graphQLObj}
                 runMutationError(CONVISO_PLATFORM_URI, CONVISO_PLATFORM_PROJECT_MUTATION, CONVISO_PLATFORM_HEADERS, variables)
-                # uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/task'
-                # runCallHttpMethod(HTTP_METHOD.POST, uri, CLICKUP_HEADERS, CLICKUP_STATUS_CODE, clickupObject)            
+                uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/task'
+                runCallHttpMethod(HTTP_METHOD.POST, uri, CLICKUP_HEADERS, CLICKUP_STATUS_CODE, clickupObject)            
 
 def FillConvisoPlatformFieldsAndClickUp():
     projectId = SelectProject()
@@ -304,7 +297,7 @@ def FillConvisoPlatformFieldsAndClickUp():
        'estimatedHours':estimatedHours,
     }
     clickupObject = {
-        'name':label,
+        'name':f'[EPIC] - {label}',
         'description':scope,
         'status':'backlog',
         'due_date':objFinishDate.timestamp()*1000,
@@ -332,38 +325,28 @@ def FillConvisoPlatformFieldsAndClickUp():
 
     variables = {'input': graphQLObj}
     runMutationError(CONVISO_PLATFORM_URI, CONVISO_PLATFORM_PROJECT_MUTATION, CONVISO_PLATFORM_HEADERS, variables)
-    # uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/task'
-    # runCallHttpMethod(HTTP_METHOD.POST, uri, CLICKUP_HEADERS, CLICKUP_STATUS_CODE, clickupObject)
+    uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/task'
+    runCallHttpMethod(HTTP_METHOD.POST, uri, CLICKUP_HEADERS, CLICKUP_STATUS_CODE, clickupObject)
 
-# def CustomFieldsClickUp():
-#     uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/field'
-#     request = requests.get(uri, headers=CLICKUP_HEADERS)
-#     if request.status_code == CLICKUP_STATUS_CODE:
-#         fields = request.json()
-#         for field in fields['fields']:
-#             if field['name'].lower().strip() == 'customer':
-#                 global ClickupIdCustomFieldCustomer 
-#                 ClickupIdCustomFieldCustomer = field['id']
-#                 for option in field['type_config']['options']:
-#                     dictClickUpCustomer[option['id']] = option['name'] 
-#             elif field['name'].lower().strip() == 'demand type':
-#                 global ClickupIdCustomFieldDemandType 
-#                 ClickupIdCustomFieldDemandType = field['id']
-#                 for option in field['type_config']['options']:
-#                     dictClickUpDemandType[option['id']] = option['name'] 
-#             elif field['name'].lower().strip() == 'link conviso platform':
-#                 global ClickupIdCustomFieldConvisoLink 
-#                 ClickupIdCustomFieldConvisoLink = field['id']
-#     else:
-#         raise Exception(f'Unexpected status code returned: {request.status_code}')
-
-def FillConsultingProjetosListClickUp():
-    uri = f'{CLICKUP_URI}folder/{CLICKUP_SPACE_ID_CONSULTING_PROJETOS}/list?archived=false'
+def CustomFieldsClickUp():
+    uri = f'{CLICKUP_URI}list/{CLICKUP_LIST_PROJECTS}/field'
     request = requests.get(uri, headers=CLICKUP_HEADERS)
     if request.status_code == CLICKUP_STATUS_CODE:
-        lists = request.json()
-        for list in lists['lists']:
-            dictClickUpConsultingProjetosList[list['id']] = list['name'] 
+        fields = request.json()
+        for field in fields['fields']:
+            if field['name'].lower().strip() == 'customer':
+                global ClickupIdCustomFieldCustomer 
+                ClickupIdCustomFieldCustomer = field['id']
+                for option in field['type_config']['options']:
+                    dictClickUpCustomer[option['id']] = option['name'] 
+            elif field['name'].lower().strip() == 'demand type':
+                global ClickupIdCustomFieldDemandType 
+                ClickupIdCustomFieldDemandType = field['id']
+                for option in field['type_config']['options']:
+                    dictClickUpDemandType[option['id']] = option['name'] 
+            elif field['name'].lower().strip() == 'conviso link':
+                global ClickupIdCustomFieldConvisoLink 
+                ClickupIdCustomFieldConvisoLink = field['id']
     else:
         raise Exception(f'Unexpected status code returned: {request.status_code}')
 
@@ -413,8 +396,7 @@ def menu():
 
 
 if __name__ == '__main__':
-    FillConsultingProjetosListClickUp()
-    # CustomFieldsClickUp()
+    CustomFieldsClickUp()
     ProjectTypesConvisoPlatform()
     print(BANNER)
     menu()

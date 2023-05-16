@@ -58,6 +58,10 @@ func RetCustomFieldCustomerPosition() (TypesClickup.CustomFieldsResponse, error)
 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
+	if resp.StatusCode != 200 {
+		return result, errors.New("Error RetCustomerPosition StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
 	if err != nil {
 		return result, errors.New("Error RetCustomerPosition ClientDo: " + err.Error())
 	}
@@ -88,6 +92,8 @@ func ClickUpAutomation(justVerify bool) {
 
 			fmt.Println("Found valid list ", lists.Lists[i].Name)
 
+			time.Sleep(time.Second)
+
 			tasks, err := ReturnTasks(lists.Lists[i].Id)
 
 			if err != nil {
@@ -101,12 +107,12 @@ func ClickUpAutomation(justVerify bool) {
 				auxEpicTaskId := ""
 
 				if len(tasks.Tasks[j].LinkedTasks) == 0 {
-					fmt.Println("Error 0 epics: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
 					continue
 				}
 
 				if len(tasks.Tasks[j].LinkedTasks) > 1 {
-					fmt.Println("Error 2 epics: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
 					continue
 				}
 
@@ -123,6 +129,8 @@ func ClickUpAutomation(justVerify bool) {
 
 				sliceEpicId = append(sliceEpicId, auxEpicTaskId)
 
+				time.Sleep(time.Second)
+
 				taskEpic, err := ReturnTask(auxEpicTaskId)
 				if err != nil {
 					fmt.Println("Error return task: ", err.Error())
@@ -130,8 +138,10 @@ func ClickUpAutomation(justVerify bool) {
 				}
 
 				if justVerify {
+					time.Sleep(time.Second)
 					VerifyTasks(taskEpic)
 				} else {
+					time.Sleep(time.Second)
 					err = ChangeEpicTask(taskEpic, tasks.Tasks[j])
 
 					if err != nil {
@@ -226,19 +236,19 @@ func VerifyTasks(taskEpic TypesClickup.TaskResponse) error {
 
 		if strings.ToLower(taskAux.Status.Status) != "backlog" {
 			if taskAux.DueDate == "" {
-				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "DueDate empty")
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "DueDate empty")
 			}
 
 			if taskAux.StartDate == "" {
-				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "StartDate empty")
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "StartDate empty")
 			}
 
 			if taskAux.TimeEstimate == 0 {
-				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "TimeEstimate empty")
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "TimeEstimate empty")
 			}
 
 			if taskAux.Status.Status == "done" && taskAux.TimeSpent == 0 {
-				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, "TimeSpent empty")
+				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "TimeSpent empty")
 			}
 		}
 	}
@@ -257,18 +267,24 @@ func ReturnTasks(listId string) (TypesClickup.TasksResponse, error) {
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
-	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*72).UTC().UnixMilli(), 10))
+	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*96).UTC().UnixMilli(), 10))
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
 	if err != nil {
-		return resultTasks, errors.New("Error request Tasks: " + err.Error())
+		return resultTasks, errors.New("Error ReturnTasks request: " + err.Error())
 	}
 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
-	if err != nil {
-		return resultTasks, errors.New("Error response Tasks: " + err.Error())
+
+	if resp.StatusCode != 200 {
+		return resultTasks, errors.New("Error ReturnTasks StatusCode: " + http.StatusText(resp.StatusCode))
 	}
+
+	if err != nil {
+		return resultTasks, errors.New("Error ReturnTasks response: " + err.Error())
+	}
+
 	data, _ := ioutil.ReadAll(resp.Body)
 	json.Unmarshal([]byte(string(data)), &resultTasks)
 	return resultTasks, nil
@@ -285,15 +301,21 @@ func ReturnLists() (TypesClickup.ListsResponse, error) {
 
 	req, err := http.NewRequest(http.MethodGet, urlGetLists.String(), nil)
 	if err != nil {
-		return result, errors.New("Error request Lists: " + err.Error())
+		return result, errors.New("Error ReturnLists request: " + err.Error())
 	}
 
 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
-	if err != nil {
-		return result, errors.New("Error response Lists: " + err.Error())
+
+	if resp.StatusCode != 200 {
+		return result, errors.New("Error ReturnLists StatusCode: " + http.StatusText(resp.StatusCode))
 	}
+
+	if err != nil {
+		return result, errors.New("Error ReturnLists response: " + err.Error())
+	}
+
 	data, _ := ioutil.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &result)
@@ -310,14 +332,19 @@ func ReturnTask(taskId string) (TypesClickup.TaskResponse, error) {
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
 	if err != nil {
-		return task, errors.New("Error request task: " + err.Error())
+		return task, errors.New("Error ReturnTask request: " + err.Error())
 	}
 
 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
+
+	if resp.StatusCode != 200 {
+		return task, errors.New("Error ReturnTask StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
 	if err != nil {
-		return task, errors.New("Error response task: " + err.Error())
+		return task, errors.New("Error ReturnTask response: " + err.Error())
 	}
 	data, _ := ioutil.ReadAll(resp.Body)
 
@@ -358,7 +385,7 @@ func RequestPutTask(taskId string, request TypesClickup.TaskRequest) error {
 	payload := bytes.NewBuffer(body)
 	req, err := http.NewRequest(http.MethodPut, urlPutTask.String(), payload)
 	if err != nil {
-		return errors.New("Error request put task: " + err.Error())
+		return errors.New("Error RequestPutTask request: " + err.Error())
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -366,8 +393,13 @@ func RequestPutTask(taskId string, request TypesClickup.TaskRequest) error {
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
 	defer req.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return errors.New("Error RequestPutTask StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
 	if err != nil {
-		return errors.New("Error response put task: " + err.Error())
+		return errors.New("Error RequestPutTask response: " + err.Error())
 	}
 
 	ioutil.ReadAll(resp.Body)
@@ -387,7 +419,7 @@ func RequestTaskTimeSpent(teamId string, request TypesClickup.TaskTimeSpentReque
 	payload := bytes.NewBuffer(body)
 	req, err := http.NewRequest(http.MethodPost, urlTaskTimeSpent.String(), payload)
 	if err != nil {
-		return errors.New("Error request time spent: " + err.Error())
+		return errors.New("Error RequestTaskTimeSpent request: " + err.Error())
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -395,8 +427,13 @@ func RequestTaskTimeSpent(teamId string, request TypesClickup.TaskTimeSpentReque
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
 	defer req.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return errors.New("Error RequestTaskTimeSpent StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
 	if err != nil {
-		return errors.New("Error response put task: " + err.Error())
+		return errors.New("Error RequestTaskTimeSpent response: " + err.Error())
 	}
 
 	ioutil.ReadAll(resp.Body)
