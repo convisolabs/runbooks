@@ -142,7 +142,7 @@ func ClickUpAutomation(justVerify bool) {
 					VerifyTasks(taskEpic)
 				} else {
 					time.Sleep(time.Second)
-					err = ChangeEpicTask(taskEpic, tasks.Tasks[j])
+					err = ChangeEpicTask(taskEpic)
 
 					if err != nil {
 						fmt.Println("Error change Epic Task: ", err.Error())
@@ -155,7 +155,7 @@ func ClickUpAutomation(justVerify bool) {
 	fmt.Println("...Finishing ClickUp Automation...")
 }
 
-func ChangeEpicTask(taskEpic TypesClickup.TaskResponse, taskTask TypesClickup.TaskResponse) error {
+func ChangeEpicTask(taskEpic TypesClickup.TaskResponse) error {
 	allSubTasksDone := true
 	var timeSpent int64
 	var requestTask TypesClickup.TaskRequest
@@ -189,12 +189,13 @@ func ChangeEpicTask(taskEpic TypesClickup.TaskResponse, taskTask TypesClickup.Ta
 		if taskAux.Status.Status != "done" {
 			allSubTasksDone = false
 		}
+
+		requestTask.Status = RetNewStatus(taskEpic.Status.Status, taskAux.Status.Status)
+		taskEpic.Status.Status = requestTask.Status
 	}
 
 	if allSubTasksDone {
 		requestTask.Status = "done"
-	} else {
-		requestTask.Status = RetNewStatus(taskEpic.Status.Status, taskTask.Status.Status)
 	}
 
 	if (timeSpent - taskEpic.TimeSpent) > 0 {
