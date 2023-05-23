@@ -186,7 +186,7 @@ func ChangeEpicTask(taskEpic TypesClickup.TaskResponse) error {
 			requestTask.StartDate = auxStartDate
 		}
 
-		if taskAux.Status.Status != "done" {
+		if taskAux.Status.Status != "done" && taskAux.Status.Status != "canceled" {
 			allSubTasksDone = false
 		}
 
@@ -235,7 +235,7 @@ func VerifyTasks(taskEpic TypesClickup.TaskResponse) error {
 			return errors.New("Error taskAux: " + err.Error())
 		}
 
-		if strings.ToLower(taskAux.Status.Status) != "backlog" {
+		if strings.ToLower(taskAux.Status.Status) != "backlog" && strings.ToLower(taskAux.Status.Status) != "canceled" && strings.ToLower(taskAux.Status.Status) != "blocked" {
 			if taskAux.DueDate == "" {
 				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "DueDate empty")
 			}
