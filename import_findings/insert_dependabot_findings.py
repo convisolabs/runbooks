@@ -4,7 +4,7 @@ import getopt, sys
 from string import Template
 import hashlib
 
-conviso_plat_url = "https://homologa.convisoappsec.com/findings"
+conviso_plat_url = "https://app.convisoappsec.com/findings"
 
 class bcolors:
     HEADER = '\033[95m'
