@@ -23,5 +23,5 @@ jobs:
    - name: Run SAST
      run: conviso sast run
    
-   - name: codereview 
-     run: conviso deploy create with values
+#    - name: codereview 
+#      run: conviso deploy create with values
