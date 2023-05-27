@@ -450,8 +450,6 @@ func TaskCreateRequest(request TypesClickup.TaskCreateRequest) (TypesClickup.Tas
 	urlCreateTask.WriteString(VariablesGlobal.Customer.ClickUpListId)
 	urlCreateTask.WriteString("/task")
 
-	fmt.Println(urlCreateTask.String())
-
 	body, _ := json.Marshal(request)
 
 	payload := bytes.NewBuffer(body)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	TypeClickup "integration.platform.clickup/types/type_clickup"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
+	VariablesConstant "integration.platform.clickup/utils/variables_constant"
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
@@ -67,30 +69,6 @@ func MenuSetupConfig() {
 		}
 	}
 }
-
-// func MenuRequirementsSearch() {
-// 	var input int
-// 	for ok := true; ok; ok = (input != 0) {
-// 		fmt.Println("-----Menu Requirements Search-----")
-// 		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
-// 		fmt.Println("0 - Previous Menu")
-// 		fmt.Println("1 - Search Requirements")
-// 		fmt.Print("Enter the option: ")
-// 		n, err := fmt.Scan(&input)
-// 		if n < 1 || err != nil {
-// 			fmt.Println("Invalid Input")
-// 			break
-// 		}
-// 		switch input {
-// 		case 0:
-// 			break
-// 		case 1:
-// 			ServiceConvisoPlatform.InputSearchRequimentsPlatform()
-// 		default:
-// 			fmt.Println("Invalid Input")
-// 		}
-// 	}
-// }
 
 func MenuClickup() {
 	var input int
@@ -278,15 +256,30 @@ func CreateProject() {
 	}
 
 	if strings.ToLower(SubTaskReqActivies) == "y" {
-		customFieldsSubTask := []TypeClickup.CustomFieldRequest{
-			customFieldUrlConvisoPlatform,
-			TypeClickup.CustomFieldRequest{
-				"664816bc-a899-45ec-9801-5a1e5be9c5f6",
-				"2",
-			},
-			customFieldCustomer}
 
 		for i := 0; i < len(project.Activities); i++ {
+			var convisoPlatformUrl bytes.Buffer
+			convisoPlatformUrl.WriteString(VariablesConstant.CONVISO_PLATFORM_URL_BASE)
+			convisoPlatformUrl.WriteString("scopes/")
+			convisoPlatformUrl.WriteString(strconv.Itoa(VariablesGlobal.Customer.PlatformID))
+			convisoPlatformUrl.WriteString("/projects/")
+			convisoPlatformUrl.WriteString(project.Id)
+			convisoPlatformUrl.WriteString("/project_requirements/")
+			convisoPlatformUrl.WriteString(project.Activities[i].Id)
+
+			customFieldUrlConvisoPlatformSubTask := TypeClickup.CustomFieldRequest{
+				"8e2863f4-e11f-409c-a373-893bc12200fb",
+				convisoPlatformUrl.String(),
+			}
+
+			customFieldsSubTask := []TypeClickup.CustomFieldRequest{
+				customFieldUrlConvisoPlatformSubTask,
+				TypeClickup.CustomFieldRequest{
+					"664816bc-a899-45ec-9801-5a1e5be9c5f6",
+					"2",
+				},
+				customFieldCustomer}
+
 			_, err := ServicesClickup.TaskCreateRequest(
 				TypeClickup.TaskCreateRequest{
 					project.Activities[i].Title,
