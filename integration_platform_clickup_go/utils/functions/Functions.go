@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
-	VariablesGlobal "integration.platform.clickup/utils/variables_global"
+	TypeIntegration "integration.platform.clickup/types/type_integration"
 )
 
-func LoadCustomerByYamlFile() []VariablesGlobal.CustomerType {
+func LoadCustomerByYamlFile() []TypeIntegration.CustomerType {
 	// Read the file
 	data, err := ioutil.ReadFile("projects.yaml")
 	if err != nil {
@@ -21,7 +21,7 @@ func LoadCustomerByYamlFile() []VariablesGlobal.CustomerType {
 	}
 
 	// Create a struct to hold the YAML data
-	var projects []VariablesGlobal.CustomerType
+	var projects []TypeIntegration.CustomerType
 
 	// Unmarshal the YAML data into the struct
 	err = yaml.Unmarshal(data, &projects)
@@ -33,7 +33,7 @@ func LoadCustomerByYamlFile() []VariablesGlobal.CustomerType {
 	return projects
 }
 
-func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []VariablesGlobal.CustomerType) (result bool) {
+func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []TypeIntegration.CustomerType) (result bool) {
 	result = false
 	for _, customer := range customers {
 		if customer.ClickUpListId == clickUpListId {

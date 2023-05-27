@@ -1,9 +1,7 @@
 package VariablesGlobal
 
-type CustomerType struct {
-	PlatformID    int    `yaml:"platformid"`
-	ClickUpListId string `yaml:"clickuplistid"`
-	Name          string `yaml:"name"`
-}
+import (
+	TypeIntegration "integration.platform.clickup/types/type_integration"
+)
 
-var Customer = CustomerType{0, "", "No selected project"}
+var Customer = TypeIntegration.CustomerType{"", 0, "", "No selected project"}

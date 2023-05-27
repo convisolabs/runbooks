@@ -29,7 +29,7 @@ func LoadProjects() {
 	fmt.Println("------Projets------")
 	// Print the data
 	for i := 0; i < len(projects); i++ {
-		fmt.Println(i, " - ", projects[i].Name)
+		fmt.Println(i, " - ", projects[i].IntegrationName)
 	}
 
 	var input int
@@ -48,7 +48,7 @@ func MenuSetupConfig() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Menu Config-----")
-		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
+		fmt.Println("Project Selected: ", VariablesGlobal.Customer.IntegrationName)
 		fmt.Println("0 - Previous Menu")
 		fmt.Println("1 - Choose Project Work")
 		fmt.Print("Enter the option: ")
@@ -147,7 +147,7 @@ func MainMenu() {
 
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Main Menu-----")
-		fmt.Println("Project Selected: ", VariablesGlobal.Customer.Name)
+		fmt.Println("Project Selected: ", VariablesGlobal.Customer.IntegrationName)
 		fmt.Println("0 - Exit")
 		fmt.Println("1 - Menu Clickup")
 		fmt.Println("2 - Menu Setup")

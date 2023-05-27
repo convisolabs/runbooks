@@ -32,7 +32,7 @@ func RetCustomerPosition() (string, error) {
 
 		if customFieldsResponse.Fields[i].Id == VariablesConstant.CLICKUP_CUSTOMER_FIELD_ID {
 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(VariablesGlobal.Customer.Name) {
+				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(VariablesGlobal.Customer.ClickUpCustomerList) {
 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
 					found = true
 					break
