@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 
+	"golang.org/x/exp/slices"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
@@ -357,4 +359,27 @@ func AddPlatformProject(inputParameters TypePlatform.ProjectCreateInputRequest) 
 	ioutil.ReadAll(resp.Body)
 
 	return nil
+}
+
+func RequirementsId(text string) (int, error) {
+
+	textSplit := strings.Split(text, "/")
+
+	if !slices.Contains(textSplit, "project_requirements") {
+		return 0, errors.New("Error RequirementsId Slice 0")
+	}
+
+	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
+
+	if error != nil {
+		return 0, errors.New("Error RequirementsId Not Integer")
+	}
+
+	return ret, nil
+}
+
+func ChangeActivitiesStatus(url string) {
+	fmt.Println(url)
+
+	RequirementsId(url)
 }

@@ -30,6 +30,7 @@ type TaskResponse struct {
 	TeamId       string             `json:"team_id"`
 	TimeSpent    int64              `json:"time_spent"`
 	List         ListResponse       `json:"list"`
+	CustomFields []CustomField      `json:"custom_fields"`
 }
 
 type TasksResponse struct {
@@ -72,6 +73,7 @@ type CustomField struct {
 	Id         string                `json:"id"`
 	Name       string                `json:"name"`
 	TypeConfig CustomFieldTypeConfig `json:"type_config"`
+	Value      string                `json:"value"`
 }
 
 type CustomFieldTypeConfig struct {

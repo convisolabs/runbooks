@@ -12,9 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/slices"
-	TypesClickup "integration.platform.clickup/types/type_clickup"
-	Functions "integration.platform.clickup/utils/functions"
+	TypeClickup "integration.platform.clickup/types/type_clickup"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
@@ -43,8 +41,17 @@ func RetCustomerPosition() (string, error) {
 	return result, nil
 }
 
-func RetCustomFieldCustomerPosition() (TypesClickup.CustomFieldsResponse, error) {
-	var result TypesClickup.CustomFieldsResponse
+func RetCustomFieldUrlConviso(customFields []TypeClickup.CustomField) string {
+	for i := 0; i < len(customFields); i++ {
+		if customFields[i].Id == VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
+			return customFields[i].Value
+		}
+	}
+	return ""
+}
+
+func RetCustomFieldCustomerPosition() (TypeClickup.CustomFieldsResponse, error) {
+	var result TypeClickup.CustomFieldsResponse
 	var urlGetTasks bytes.Buffer
 	urlGetTasks.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
@@ -71,151 +78,7 @@ func RetCustomFieldCustomerPosition() (TypesClickup.CustomFieldsResponse, error)
 	return result, nil
 }
 
-func ClickUpAutomation(justVerify bool) {
-	fmt.Println("...Starting ClickUp Automation...")
-
-	lists, err := ReturnLists()
-
-	if err != nil {
-		fmt.Println("Error return list: ", err.Error())
-		return
-	}
-
-	fmt.Println("...Searching valid list...")
-	for i := 0; i < len(lists.Lists); i++ {
-
-		fmt.Println("Found List ", lists.Lists[i].Name)
-
-		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, Functions.LoadCustomerByYamlFile()) {
-
-			var sliceEpicId []string
-
-			fmt.Println("Found valid list ", lists.Lists[i].Name)
-
-			time.Sleep(time.Second)
-
-			tasks, err := ReturnTasks(lists.Lists[i].Id)
-
-			if err != nil {
-				fmt.Println("Error return tasks: ", err.Error())
-				return
-			}
-
-			for j := 0; j < len(tasks.Tasks); j++ {
-				fmt.Println("Task ", j+1, "/", len(tasks.Tasks), " - ", tasks.Tasks[j].Name)
-
-				auxEpicTaskId := ""
-
-				if len(tasks.Tasks[j].LinkedTasks) == 0 {
-					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
-					continue
-				}
-
-				if len(tasks.Tasks[j].LinkedTasks) > 1 {
-					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
-					continue
-				}
-
-				//dependendo a ordem que vc linkar as tarefas ele vai jogar no linkid ou no taskid
-				if tasks.Tasks[j].Id == tasks.Tasks[j].LinkedTasks[0].TaskId {
-					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].LinkId
-				} else {
-					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].TaskId
-				}
-
-				if slices.Contains(sliceEpicId, auxEpicTaskId) {
-					continue
-				}
-
-				sliceEpicId = append(sliceEpicId, auxEpicTaskId)
-
-				time.Sleep(time.Second)
-
-				taskEpic, err := ReturnTask(auxEpicTaskId)
-				if err != nil {
-					fmt.Println("Error return task: ", err.Error())
-					return
-				}
-
-				if justVerify {
-					time.Sleep(time.Second)
-					VerifyTasks(taskEpic)
-				} else {
-					time.Sleep(time.Second)
-					err = ChangeEpicTask(taskEpic)
-
-					if err != nil {
-						fmt.Println("Error change Epic Task: ", err.Error())
-						return
-					}
-				}
-			}
-		}
-	}
-	fmt.Println("...Finishing ClickUp Automation...")
-}
-
-func ChangeEpicTask(taskEpic TypesClickup.TaskResponse) error {
-	allSubTasksDone := true
-	var timeSpent int64
-	var requestTask TypesClickup.TaskRequest
-
-	for k := 0; k < len(taskEpic.LinkedTasks); k++ {
-
-		auxTaskId := ""
-
-		if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
-			auxTaskId = taskEpic.LinkedTasks[k].TaskId
-		} else {
-			auxTaskId = taskEpic.LinkedTasks[k].LinkId
-		}
-
-		taskAux, err := ReturnTask(auxTaskId)
-		if err != nil {
-			return errors.New("Error taskAux: " + err.Error())
-		}
-		auxDuoDate, _ := strconv.ParseInt(taskAux.DueDate, 10, 64)
-		auxStartDate, _ := strconv.ParseInt(taskAux.StartDate, 10, 64)
-		requestTask.TimeEstimate = requestTask.TimeEstimate + taskAux.TimeEstimate
-		timeSpent = timeSpent + taskAux.TimeSpent
-		if auxDuoDate > requestTask.DueDate {
-			requestTask.DueDate = auxDuoDate
-		}
-
-		if auxStartDate != 0 && auxStartDate < requestTask.StartDate || requestTask.StartDate == 0 {
-			requestTask.StartDate = auxStartDate
-		}
-
-		if taskAux.Status.Status != "done" && taskAux.Status.Status != "canceled" {
-			allSubTasksDone = false
-		}
-
-		requestTask.Status = RetNewStatus(taskEpic.Status.Status, taskAux.Status.Status)
-		taskEpic.Status.Status = requestTask.Status
-	}
-
-	if allSubTasksDone {
-		requestTask.Status = "done"
-	}
-
-	if (timeSpent - taskEpic.TimeSpent) > 0 {
-		var taskTimeSpentRequest TypesClickup.TaskTimeSpentRequest
-		taskTimeSpentRequest.Duration = timeSpent - taskEpic.TimeSpent
-		taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
-		taskTimeSpentRequest.TaskId = taskEpic.Id
-		RequestTaskTimeSpent(taskEpic.TeamId, taskTimeSpentRequest)
-	}
-
-	err := RequestPutTask(taskEpic.Id, requestTask)
-
-	if err != nil {
-		return errors.New("Error taskAux: " + err.Error())
-	}
-
-	return nil
-}
-
-func VerifyTasks(taskEpic TypesClickup.TaskResponse) error {
+func VerifyTasks(taskEpic TypeClickup.TaskResponse) error {
 
 	if len(taskEpic.LinkedTasks) == 0 {
 		fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", "Nenhuma subtarefa lincada")
@@ -257,8 +120,8 @@ func VerifyTasks(taskEpic TypesClickup.TaskResponse) error {
 	return nil
 }
 
-func ReturnTasks(listId string) (TypesClickup.TasksResponse, error) {
-	var resultTasks TypesClickup.TasksResponse
+func ReturnTasks(listId string) (TypeClickup.TasksResponse, error) {
+	var resultTasks TypeClickup.TasksResponse
 	var urlGetTasks bytes.Buffer
 	urlGetTasks.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
@@ -291,8 +154,8 @@ func ReturnTasks(listId string) (TypesClickup.TasksResponse, error) {
 	return resultTasks, nil
 }
 
-func ReturnLists() (TypesClickup.ListsResponse, error) {
-	var result TypesClickup.ListsResponse
+func ReturnLists() (TypeClickup.ListsResponse, error) {
+	var result TypeClickup.ListsResponse
 
 	var urlGetLists bytes.Buffer
 	urlGetLists.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
@@ -324,8 +187,8 @@ func ReturnLists() (TypesClickup.ListsResponse, error) {
 	return result, nil
 }
 
-func ReturnTask(taskId string) (TypesClickup.TaskResponse, error) {
-	var task TypesClickup.TaskResponse
+func ReturnTask(taskId string) (TypeClickup.TaskResponse, error) {
+	var task TypeClickup.TaskResponse
 	var urlGetTask bytes.Buffer
 	urlGetTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlGetTask.WriteString("task/")
@@ -374,7 +237,7 @@ func RetNewStatus(statusPrincipal string, statusLinked string) string {
 	return newReturn
 }
 
-func RequestPutTask(taskId string, request TypesClickup.TaskRequest) error {
+func RequestPutTask(taskId string, request TypeClickup.TaskRequest) error {
 
 	var urlPutTask bytes.Buffer
 	urlPutTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
@@ -408,7 +271,7 @@ func RequestPutTask(taskId string, request TypesClickup.TaskRequest) error {
 	return nil
 }
 
-func RequestTaskTimeSpent(teamId string, request TypesClickup.TaskTimeSpentRequest) error {
+func RequestTaskTimeSpent(teamId string, request TypeClickup.TaskTimeSpentRequest) error {
 	var urlTaskTimeSpent bytes.Buffer
 	urlTaskTimeSpent.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlTaskTimeSpent.WriteString("team/")
@@ -442,8 +305,8 @@ func RequestTaskTimeSpent(teamId string, request TypesClickup.TaskTimeSpentReque
 	return nil
 }
 
-func TaskCreateRequest(request TypesClickup.TaskCreateRequest) (TypesClickup.TaskResponse, error) {
-	var result TypesClickup.TaskResponse
+func TaskCreateRequest(request TypeClickup.TaskCreateRequest) (TypeClickup.TaskResponse, error) {
+	var result TypeClickup.TaskResponse
 	var urlCreateTask bytes.Buffer
 	urlCreateTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlCreateTask.WriteString("list/")

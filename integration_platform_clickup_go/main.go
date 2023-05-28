@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	ServicesClickup "integration.platform.clickup/services/service_clickup"
+	"golang.org/x/exp/slices"
+	ServiceClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
 	TypeClickup "integration.platform.clickup/types/type_clickup"
 	TypePlatform "integration.platform.clickup/types/type_platform"
@@ -70,6 +71,150 @@ func MenuSetupConfig() {
 	}
 }
 
+func UpdateClickUpConvisoPlatform(justVerify bool) {
+	fmt.Println("...Starting ClickUp Automation...")
+
+	lists, err := ServiceClickup.ReturnLists()
+
+	if err != nil {
+		fmt.Println("Error return list: ", err.Error())
+		return
+	}
+
+	fmt.Println("...Searching valid list...")
+	for i := 0; i < len(lists.Lists); i++ {
+
+		fmt.Println("Found List ", lists.Lists[i].Name)
+
+		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, Functions.LoadCustomerByYamlFile()) {
+
+			var sliceEpicId []string
+
+			fmt.Println("Found valid list ", lists.Lists[i].Name)
+
+			time.Sleep(time.Second)
+
+			tasks, err := ServiceClickup.ReturnTasks(lists.Lists[i].Id)
+
+			if err != nil {
+				fmt.Println("Error return tasks: ", err.Error())
+				return
+			}
+
+			for j := 0; j < len(tasks.Tasks); j++ {
+				fmt.Println("Task ", j+1, "/", len(tasks.Tasks), " - ", tasks.Tasks[j].Name)
+
+				auxEpicTaskId := ""
+
+				if len(tasks.Tasks[j].LinkedTasks) == 0 {
+					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					continue
+				}
+
+				if len(tasks.Tasks[j].LinkedTasks) > 1 {
+					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					continue
+				}
+
+				//dependendo a ordem que vc linkar as tarefas ele vai jogar no linkid ou no taskid
+				if tasks.Tasks[j].Id == tasks.Tasks[j].LinkedTasks[0].TaskId {
+					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].LinkId
+				} else {
+					auxEpicTaskId = tasks.Tasks[j].LinkedTasks[0].TaskId
+				}
+
+				if slices.Contains(sliceEpicId, auxEpicTaskId) {
+					continue
+				}
+
+				sliceEpicId = append(sliceEpicId, auxEpicTaskId)
+
+				time.Sleep(time.Second)
+
+				taskEpic, err := ServiceClickup.ReturnTask(auxEpicTaskId)
+				if err != nil {
+					fmt.Println("Error return task: ", err.Error())
+					return
+				}
+
+				if justVerify {
+					time.Sleep(time.Second)
+					ServiceClickup.VerifyTasks(taskEpic)
+				} else {
+					time.Sleep(time.Second)
+
+					allSubTasksDone := true
+					var timeSpent int64
+					var requestTask TypeClickup.TaskRequest
+
+					for k := 0; k < len(taskEpic.LinkedTasks); k++ {
+
+						auxTaskId := ""
+
+						if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
+							auxTaskId = taskEpic.LinkedTasks[k].TaskId
+						} else {
+							auxTaskId = taskEpic.LinkedTasks[k].LinkId
+						}
+
+						taskAux, err := ServiceClickup.ReturnTask(auxTaskId)
+						if err != nil {
+							fmt.Println("Error taskAux: " + err.Error())
+							continue
+						}
+						auxDuoDate, _ := strconv.ParseInt(taskAux.DueDate, 10, 64)
+						auxStartDate, _ := strconv.ParseInt(taskAux.StartDate, 10, 64)
+						requestTask.TimeEstimate = requestTask.TimeEstimate + taskAux.TimeEstimate
+						timeSpent = timeSpent + taskAux.TimeSpent
+						if auxDuoDate > requestTask.DueDate {
+							requestTask.DueDate = auxDuoDate
+						}
+
+						if auxStartDate != 0 && auxStartDate < requestTask.StartDate || requestTask.StartDate == 0 {
+							requestTask.StartDate = auxStartDate
+						}
+
+						if taskAux.Status.Status != "done" && taskAux.Status.Status != "canceled" {
+							allSubTasksDone = false
+						}
+
+						requestTask.Status = ServiceClickup.RetNewStatus(taskEpic.Status.Status, taskAux.Status.Status)
+						taskEpic.Status.Status = requestTask.Status
+
+						//precisa alterar o requirements
+						//https://app.convisoappsec.com/scopes/553/projects/15296/project_requirements/232561
+
+						ServiceConvisoPlatform.ChangeActivitiesStatus(ServiceClickup.RetCustomFieldUrlConviso(taskAux.CustomFields))
+
+					}
+
+					if allSubTasksDone {
+						requestTask.Status = "done"
+					}
+
+					if (timeSpent - taskEpic.TimeSpent) > 0 {
+						var taskTimeSpentRequest TypeClickup.TaskTimeSpentRequest
+						taskTimeSpentRequest.Duration = timeSpent - taskEpic.TimeSpent
+						taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
+						taskTimeSpentRequest.TaskId = taskEpic.Id
+						ServiceClickup.RequestTaskTimeSpent(taskEpic.TeamId, taskTimeSpentRequest)
+					}
+
+					err := ServiceClickup.RequestPutTask(taskEpic.Id, requestTask)
+
+					if err != nil {
+						fmt.Println("Error taskAux: " + err.Error())
+					}
+
+					//precisa alterar o status no conviso platform
+
+				}
+			}
+		}
+	}
+	fmt.Println("...Finishing ClickUp Automation...")
+}
+
 func MenuClickup() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
@@ -86,9 +231,9 @@ func MenuClickup() {
 		case 0:
 			break
 		case 1:
-			ServicesClickup.ClickUpAutomation(true)
+			UpdateClickUpConvisoPlatform(true)
 		case 2:
-			ServicesClickup.ClickUpAutomation(false)
+			UpdateClickUpConvisoPlatform(false)
 		default:
 			fmt.Println("Invalid Input")
 		}
@@ -214,7 +359,7 @@ func CreateProject() {
 		return
 	}
 
-	CustomFieldCustomerPosition, err := ServicesClickup.RetCustomerPosition()
+	CustomFieldCustomerPosition, err := ServiceClickup.RetCustomerPosition()
 	if err != nil {
 		fmt.Println("Error CreateProject: CustomerCustomField error...")
 		CustomFieldCustomerPosition = ""
@@ -240,7 +385,7 @@ func CreateProject() {
 	}
 
 	//create main
-	taskMainClickup, err := ServicesClickup.TaskCreateRequest(
+	taskMainClickup, err := ServiceClickup.TaskCreateRequest(
 		TypeClickup.TaskCreateRequest{
 			project.Label,
 			project.Scope,
@@ -280,7 +425,7 @@ func CreateProject() {
 				},
 				customFieldCustomer}
 
-			_, err := ServicesClickup.TaskCreateRequest(
+			_, err := ServiceClickup.TaskCreateRequest(
 				TypeClickup.TaskCreateRequest{
 					project.Activities[i].Title,
 					project.Activities[i].Description,
