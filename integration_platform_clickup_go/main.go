@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"strconv"
 	"strings"
@@ -215,30 +216,30 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 	fmt.Println("...Finishing ClickUp Automation...")
 }
 
-func MenuClickup() {
-	var input int
-	for ok := true; ok; ok = (input != 0) {
-		fmt.Println("-----Menu Clickup-----")
-		fmt.Println("0 - Previous Menu")
-		fmt.Println("1 - Verification Tasks Clickup")
-		fmt.Println("2 - Update Tasks Clickup")
-		fmt.Print("Enter the option: ")
-		n, err := fmt.Scan(&input)
-		if n < 1 || err != nil {
-			fmt.Println("Invalid Input")
-		}
-		switch input {
-		case 0:
-			break
-		case 1:
-			UpdateClickUpConvisoPlatform(true)
-		case 2:
-			UpdateClickUpConvisoPlatform(false)
-		default:
-			fmt.Println("Invalid Input")
-		}
-	}
-}
+// func MenuClickup() {
+// 	var input int
+// 	for ok := true; ok; ok = (input != 0) {
+// 		fmt.Println("-----Menu Clickup-----")
+// 		fmt.Println("0 - Previous Menu")
+// 		fmt.Println("1 - Verification Tasks Clickup")
+// 		fmt.Println("2 - Update Tasks Clickup")
+// 		fmt.Print("Enter the option: ")
+// 		n, err := fmt.Scan(&input)
+// 		if n < 1 || err != nil {
+// 			fmt.Println("Invalid Input")
+// 		}
+// 		switch input {
+// 		case 0:
+// 			break
+// 		case 1:
+// 			UpdateClickUpConvisoPlatform(true)
+// 		case 2:
+// 			UpdateClickUpConvisoPlatform(false)
+// 		default:
+// 			fmt.Println("Invalid Input")
+// 		}
+// 	}
+// }
 
 func MenuSearchConvisoPlatform() {
 	var input int
@@ -272,10 +273,9 @@ func MainMenu() {
 		fmt.Println("-----Main Menu-----")
 		fmt.Println("Project Selected: ", VariablesGlobal.Customer.IntegrationName)
 		fmt.Println("0 - Exit")
-		fmt.Println("1 - Menu Clickup")
-		fmt.Println("2 - Menu Setup")
-		fmt.Println("3 - Create Project Conviso Platform/ClickUp")
-		fmt.Println("4 - Menu Search Conviso Platform")
+		fmt.Println("1 - Menu Setup")
+		fmt.Println("2 - Create Project Conviso Platform/ClickUp")
+		fmt.Println("3 - Menu Search Conviso Platform")
 
 		fmt.Print("Enter the option: ")
 		n, err := fmt.Scan(&input)
@@ -288,17 +288,17 @@ func MainMenu() {
 		switch input {
 		case 0:
 			fmt.Println("Finished program!")
+		// case 1:
+		// 	MenuClickup()
 		case 1:
-			MenuClickup()
-		case 2:
 			MenuSetupConfig()
-		case 3:
+		case 2:
 			if VariablesGlobal.Customer.PlatformID == 0 {
 				fmt.Println("No Project Selected!")
 			} else {
 				CreateProject()
 			}
-		case 4:
+		case 3:
 			MenuSearchConvisoPlatform()
 		default:
 			fmt.Println("Invalid Input")
@@ -445,18 +445,30 @@ func CreateProject() {
 
 func main() {
 	//próximas tarefas
-	// quando atualizar uma tarefa tentar mudar o status do conviso platform
-	// parametrizar tudo para utilização da função flags do golang
+	// qdo atualizar um epico atualizar o projeto no conviso platform
+	// qdo atualizar uma task atualizar também o requirements na platforma
+	// sanitizar a saída do conviso platform está colocando tags html no clickup
 
-	// 	var searchRequiments string
+	integrationJustVerify := flag.Bool("iv", false, "Verify if clickup tasks is ok")
+	integrationUpdateTasks := flag.Bool("iu", false, "Update Conviso Platform and ClickUp Tasks")
+	deploy := flag.Bool("d", false, "See info about deploys")
 
-	// 	flag.StringVar(&searchRequiments, "sr", "", "Search Conviso Platform Requirements")
+	flag.Parse()
 
-	// 	flag.Parse()
+	if *integrationJustVerify {
+		UpdateClickUpConvisoPlatform(true)
+	}
 
-	// 	if searchRequiments != "" {
-	// 		ServiceConvisoPlatform.SearchRequimentsPlatform(searchRequiments)
-	// 	} else {
-	MainMenu()
-	// }
+	if *integrationUpdateTasks {
+		UpdateClickUpConvisoPlatform(false)
+	}
+
+	if *deploy {
+		ServiceConvisoPlatform.RetDeploys()
+	}
+
+	if !*integrationJustVerify && !*integrationUpdateTasks && !*deploy {
+		MainMenu()
+	}
+
 }
