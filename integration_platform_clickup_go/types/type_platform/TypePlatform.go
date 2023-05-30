@@ -99,3 +99,29 @@ type ProjectTypeParameters struct {
 	Page        int
 	ProjectType string
 }
+
+type DeployType struct {
+	ChangedLines  int         `json:"changedLines"`
+	NewLines      int         `json:"newLines"`
+	RemovedLines  int         `json:"removedLines"`
+	Reviewed      bool        `json:"reviewed"`
+	CurrentCommit string      `json:"currentCommit"`
+	Project       ProjectType `json:"project"`
+}
+
+type DeployTypeCollectionMetadataResponse struct {
+	Collection []DeployType     `json:"collection"`
+	Metadata   MetadataResponse `json:"metadata"`
+}
+
+type DeployTypeDataResponse struct {
+	DeployTypeData DeployTypeCollectionMetadataResponse `json:"deploysByCompanyId"`
+}
+
+type DeployTypeResponse struct {
+	Data DeployTypeDataResponse `json:"data"`
+}
+
+type PageParameters struct {
+	Page int `json:"Page"`
+}

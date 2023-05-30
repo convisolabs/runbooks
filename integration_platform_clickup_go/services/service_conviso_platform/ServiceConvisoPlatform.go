@@ -41,6 +41,53 @@ const CONVISO_PLATFORM_PROJECT_TYPES = `
 }
 `
 
+const CONVISO_PLATFORM_DEPLOY = `
+query DeploysByCompanyId($Page:Int){
+	deploysByCompanyId(
+	  id: "152"
+	  initialDate: "2023-01-01T00:00:00-03:00"
+	  finishDate: "2023-05-29T23:59:59-03:00"
+	  page: $Page
+	  limit: 1000
+	) {
+	  collection {
+		changedApproximately
+		changedLines
+		createdAt
+		currentCommit
+		currentTag
+		deployUrlCompare
+		discardReason
+		discardedId
+		gauntletDiffUrl
+		gauntletScanId
+		gauntletSourceCodeId
+		gitDiff
+		id
+		languages
+		newLines
+		previousCommit
+		previousTag
+		removedLines
+		reviewed
+		reviewedAt
+		status
+		totalProjectLines
+		updatedAt,
+		project{
+		  label
+		}
+	  }
+	  metadata {
+		currentPage
+		limitValue
+		totalCount
+		totalPages
+	  }
+	}
+  }
+`
+
 const CONVISO_PLATFORM_PROJECTS_QUERY = `
 	query Projects($label: String){
 		projects(page: 1, limit: 100, params: {
@@ -163,6 +210,69 @@ const CONVISO_PLATFORM_PROJECT_CREATE = `
 		}
 	}
 `
+
+func RetDeploys() {
+	var result TypePlatform.DeployTypeResponse
+
+	reviewNewLine := 0
+	reviewRemovedLine := 0
+	reviewChangedLine := 0
+
+	newLine := 0
+	removedLine := 0
+	changedLine := 0
+
+	for i := 0; i <= result.Data.DeployTypeData.Metadata.TotalPages; i++ {
+		parameters, _ := json.Marshal(TypePlatform.PageParameters{Page: i + 1})
+		body, _ := json.Marshal(map[string]string{
+			"query":     CONVISO_PLATFORM_DEPLOY,
+			"variables": string(parameters),
+		})
+
+		payload := bytes.NewBuffer(body)
+		req, err := http.NewRequest(http.MethodPost, VariablesConstant.CONVISO_PLATFORM_API_GRAPHQL, payload)
+		if err != nil {
+			fmt.Println("Error RetDeploys NewRequest: ", err.Error())
+			return
+		}
+
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("x-api-key", os.Getenv("CONVISO_PLATFORM_TOKEN"))
+		client := &http.Client{Timeout: time.Second * 30}
+		resp, err := client.Do(req)
+		defer req.Body.Close()
+		if err != nil {
+			fmt.Println("Error RetDeploys ClientDo: ", err.Error())
+			return
+		}
+		data, _ := ioutil.ReadAll(resp.Body)
+
+		json.Unmarshal([]byte(string(data)), &result)
+		for i := 0; i < len(result.Data.DeployTypeData.Collection); i++ {
+
+			if result.Data.DeployTypeData.Collection[i].Reviewed {
+				reviewChangedLine = reviewChangedLine + result.Data.DeployTypeData.Collection[i].ChangedLines
+				reviewRemovedLine = reviewRemovedLine + result.Data.DeployTypeData.Collection[i].RemovedLines
+				reviewNewLine = reviewNewLine + result.Data.DeployTypeData.Collection[i].NewLines
+			} else {
+				changedLine = changedLine + result.Data.DeployTypeData.Collection[i].ChangedLines
+				removedLine = removedLine + result.Data.DeployTypeData.Collection[i].RemovedLines
+				newLine = newLine + result.Data.DeployTypeData.Collection[i].NewLines
+
+			}
+		}
+		result.Data.DeployTypeData.Metadata.TotalPages = result.Data.DeployTypeData.Metadata.TotalPages - 1
+
+		fmt.Println(strconv.Itoa(i), "/", strconv.Itoa(result.Data.DeployTypeData.Metadata.TotalPages))
+	}
+
+	println("reviewChangedLine = " + strconv.Itoa(reviewChangedLine))
+	println("reviewRemovedLine = " + strconv.Itoa(reviewRemovedLine))
+	println("reviewNewLine = " + strconv.Itoa(reviewNewLine))
+	println("changedLine = " + strconv.Itoa(changedLine))
+	println("removedLine = " + strconv.Itoa(removedLine))
+	println("newLine = " + strconv.Itoa(newLine))
+}
 
 func SearchRequimentsPlatform(reqSearch string) {
 	var result TypePlatform.RequirementsResponse
