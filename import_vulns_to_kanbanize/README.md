@@ -7,9 +7,10 @@ This tool was created to help customers import vulnerabilities from Conviso Plat
 The first thing you want to do is edit the `statuses` variable inside the script. For example, in a test Kanbanize board, we defined the columns as the status in Conviso Platform. That means that when the script will create the vulberability card inside the Kanbanize Board, the card will already be created into the right column.
 For this you need to know the id's of the columns of your board. You can check this by pressing F12 in your keyboard and inspecting the elements of the columns, as you can see in the screenshot below
 
-![image](https://github.com/convisolabs/runbooks/assets/100381905/ae8c2196-7ce1-43cc-9993-e12ace31da2b)
+![image](https://github.com/convisolabs/runbooks/assets/100381905/b6ac5857-77ef-42e3-a579-14e62fc2bc7b)
 
 So you will want to configure the following inside the script, so the cards are created in the correct column. If you want to create them all into the same column, you can simply put the same value into all fields.
+For example, in this case I want the vulnerabilities with status `identified` in Conviso Platform to be created in the column **Identified** in my Kanbanize board, so I will configure it with the id `13`, as below:
 
 ```python
 statuses = {
@@ -34,7 +35,7 @@ The usage of the script is quite simple. You will need the following:
 | -b,--board_id=  | Kanbanize Board Id |
 | -l,--lane_id=  | Kanbanize Lane Id |
 | -u,--url=  | Kanbanize URL (eg: https://conviso.kanbanize.com) |
-| -f,--update | Flag for updating the columns in Kanbanize |
+| -f,--update | Flag for updating the columns in Kanbanize (optional) |
 
 Then, you will run the script as:
 
