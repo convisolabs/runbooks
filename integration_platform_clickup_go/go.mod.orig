@@ -2,6 +2,7 @@ module main20
 
 go 1.20
 
+<<<<<<< HEAD
 replace integration.platform.clickup/types/type_platform => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/types/type_platform
 
 replace integration.platform.clickup/types/type_clickup => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/types/type_clickup
@@ -11,12 +12,29 @@ replace integration.platform.clickup/types/type_integration => /home/zani0x03/de
 replace integration.platform.clickup/services/service_clickup => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/services/service_clickup
 
 replace integration.platform.clickup/services/service_conviso_platform => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/services/service_conviso_platform
+=======
+replace integration.platform.clickup/types/type_platform => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/types/type_platform
+
+replace integration.platform.clickup/types/type_clickup => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/types/type_clickup
+
+replace integration.platform.clickup/types/type_integration => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/types/type_integration
+
+replace integration.platform.clickup/services/service_clickup => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/services/service_clickup
+
+replace integration.platform.clickup/services/service_conviso_platform => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/services/service_conviso_platform
+>>>>>>> d0e74b9a3cc7d1edd15ac13de13f45f17b822e95
 
 replace integration.platform.clickup/utils/functions => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/utils/functions
 
+<<<<<<< HEAD
 replace integration.platform.clickup/utils/variables_global => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/variables_global
 
 replace integration.platform.clickup/utils/variables_constant => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/variables_constant
+=======
+replace integration.platform.clickup/utils/variables_global => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/utils/variables_global
+
+replace integration.platform.clickup/utils/variables_constant => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/utils/variables_constant
+>>>>>>> d0e74b9a3cc7d1edd15ac13de13f45f17b822e95
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
