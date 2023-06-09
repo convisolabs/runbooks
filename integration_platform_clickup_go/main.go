@@ -249,6 +249,7 @@ func MenuSearchConvisoPlatform() {
 		fmt.Println("0 - Previous Menu")
 		fmt.Println("1 - Requirements")
 		fmt.Println("2 - Type Project")
+		fmt.Println("3 - Count Deploys")
 		fmt.Print("Enter the option: ")
 		n, err := fmt.Scan(&input)
 		if n < 1 || err != nil {
@@ -261,6 +262,8 @@ func MenuSearchConvisoPlatform() {
 			ServiceConvisoPlatform.InputSearchRequimentsPlatform()
 		case 2:
 			ServiceConvisoPlatform.InputSearchProjectTypesPlatform()
+		case 3:
+			ServiceConvisoPlatform.RetDeploys()
 		default:
 			fmt.Println("Invalid Input")
 		}

@@ -217,6 +217,8 @@ func RetDeploys() {
 	reviewNewLine := 0
 	reviewRemovedLine := 0
 	reviewChangedLine := 0
+	numDeploysReviewed := 0
+	numDeploysNotReviewed := 0
 
 	newLine := 0
 	removedLine := 0
@@ -254,10 +256,12 @@ func RetDeploys() {
 				reviewChangedLine = reviewChangedLine + result.Data.DeployTypeData.Collection[i].ChangedLines
 				reviewRemovedLine = reviewRemovedLine + result.Data.DeployTypeData.Collection[i].RemovedLines
 				reviewNewLine = reviewNewLine + result.Data.DeployTypeData.Collection[i].NewLines
+				numDeploysReviewed = numDeploysReviewed + 1
 			} else {
 				changedLine = changedLine + result.Data.DeployTypeData.Collection[i].ChangedLines
 				removedLine = removedLine + result.Data.DeployTypeData.Collection[i].RemovedLines
 				newLine = newLine + result.Data.DeployTypeData.Collection[i].NewLines
+				numDeploysNotReviewed = numDeploysNotReviewed + 1
 
 			}
 		}
@@ -272,6 +276,9 @@ func RetDeploys() {
 	println("changedLine = " + strconv.Itoa(changedLine))
 	println("removedLine = " + strconv.Itoa(removedLine))
 	println("newLine = " + strconv.Itoa(newLine))
+	println("Total Deploys = " + strconv.Itoa(numDeploysReviewed+numDeploysNotReviewed))
+	println("Deploys not Reviewed = " + strconv.Itoa(numDeploysNotReviewed))
+	println("Deploys Reviewed = " + strconv.Itoa(numDeploysReviewed))
 }
 
 func SearchRequimentsPlatform(reqSearch string) {
