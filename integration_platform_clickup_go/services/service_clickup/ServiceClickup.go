@@ -131,7 +131,7 @@ func ReturnTasks(listId string) (TypeClickup.TasksResponse, error) {
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
-	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*96).UTC().UnixMilli(), 10))
+	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
 	if err != nil {

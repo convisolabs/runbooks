@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jaytaylor/html2text"
 	"golang.org/x/exp/slices"
 	ServiceClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
@@ -425,10 +426,16 @@ func CreateProject() {
 				},
 				customFieldCustomer}
 
+			sanitizedHTMLTitle := ""
+			sanitizedHTMLDescription := ""
+
+			sanitizedHTMLTitle, err = html2text.FromString(project.Activities[i].Title)
+			sanitizedHTMLDescription, err = html2text.FromString(project.Activities[i].Description)
+
 			_, err := ServiceClickup.TaskCreateRequest(
 				TypeClickup.TaskCreateRequest{
-					project.Activities[i].Title,
-					project.Activities[i].Description,
+					sanitizedHTMLTitle,
+					sanitizedHTMLDescription,
 					"backlog",
 					true,
 					taskMainClickup.Id,
