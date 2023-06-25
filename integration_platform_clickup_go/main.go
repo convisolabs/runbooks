@@ -109,12 +109,12 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 				auxEpicTaskId := ""
 
 				if len(tasks.Tasks[j].LinkedTasks) == 0 {
-					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status))
 					continue
 				}
 
 				if len(tasks.Tasks[j].LinkedTasks) > 1 {
-					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " - ", tasks.Tasks[j].Name)
+					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status))
 					continue
 				}
 
@@ -174,6 +174,11 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 						if auxStartDate != 0 && auxStartDate < requestTask.StartDate || requestTask.StartDate == 0 {
 							requestTask.StartDate = auxStartDate
+						}
+
+						//caso tenha data no epic, não alterar qdo for 0
+						if requestTask.StartDate == 0 && taskEpic.StartDate != "0" {
+							requestTask.StartDate, _ = strconv.ParseInt(taskEpic.StartDate, 10, 64)
 						}
 
 						if taskAux.Status.Status != "done" && taskAux.Status.Status != "canceled" {

@@ -12,7 +12,7 @@ replace integration.platform.clickup/services/service_clickup => /home/zani0x03/
 
 replace integration.platform.clickup/services/service_conviso_platform => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/services/service_conviso_platform
 
-replace integration.platform.clickup/utils/functions => /home/Luiz/Desktop/runbooks/integration_platform_clickup_go/utils/functions
+replace integration.platform.clickup/utils/functions => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/functions
 
 replace integration.platform.clickup/utils/variables_global => /home/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/variables_global
 
