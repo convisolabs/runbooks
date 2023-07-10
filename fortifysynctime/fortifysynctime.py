@@ -36,7 +36,7 @@ for page in range(1, 18):
 
         # Realize a busca pelos padrões usando expressões regulares
         name_pattern = r'ASSET'
-        date_pattern = r'([0-9]{2}/){2}[0-9]{4}'
+        date_pattern = r'\b([0-9]{2}/){2}[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [AP]M\b'
 
         name_match = re.search(name_pattern, data)
         date_match = re.search(date_pattern, data)
