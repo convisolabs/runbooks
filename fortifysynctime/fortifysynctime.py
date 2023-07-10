@@ -6,7 +6,7 @@ headers = {
     'authority': 'app.conviso.com.br',
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6',
-    'X-Armature-Api-Key': 'REPLACE HERE',
+    'X-Armature-Api-Key': 'APIKEY',
     'if-none-match': 'W/"eb6d93c4f9c8a3febb0bff41f3525ab2"',
     'referer': 'https://app.conviso.com.br/scopes/COMPANYID/integrations/fortify?utf8=%E2%9C%93&status=error&name=&button=',
     'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
@@ -35,7 +35,7 @@ for page in range(1, 18):
         data = response.text
 
         # Realize a busca pelos padrões usando expressões regulares
-        name_pattern = r'treinamentos-quickstart-nodejs-gitlabcicd DevSecOps'
+        name_pattern = r'ASSET'
         date_pattern = r'([0-9]{2}/){2}[0-9]{4}'
 
         name_match = re.search(name_pattern, data)
@@ -45,4 +45,4 @@ for page in range(1, 18):
             name = name_match.group()
             date = date_match.group()
             print(f'{name} - {date}')
-
+            break  # Encerra a execução após encontrar o resultado
