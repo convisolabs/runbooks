@@ -31,6 +31,7 @@ type TaskResponse struct {
 	TimeSpent    int64              `json:"time_spent"`
 	List         ListResponse       `json:"list"`
 	CustomFields []CustomField      `json:"custom_fields"`
+	Url          string             `json:"url"`
 }
 
 type TasksResponse struct {

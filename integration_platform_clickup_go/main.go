@@ -109,12 +109,12 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 				auxEpicTaskId := ""
 
 				if len(tasks.Tasks[j].LinkedTasks) == 0 {
-					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status))
+					fmt.Println("Error 0 epics", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status), " :: ", tasks.Tasks[j].Url)
 					continue
 				}
 
 				if len(tasks.Tasks[j].LinkedTasks) > 1 {
-					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status))
+					fmt.Println("Error 2 epics:", " :: ", lists.Lists[i].Name, " :: ", tasks.Tasks[j].Name, " :: ", strings.ToLower(tasks.Tasks[j].Status.Status), " :: ", tasks.Tasks[j].Url)
 					continue
 				}
 
