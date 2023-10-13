@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -41,13 +42,22 @@ func RetCustomerPosition() (string, error) {
 	return result, nil
 }
 
-func RetCustomFieldUrlConviso(customFields []TypeClickup.CustomField) string {
+// func RetCustomFieldUrlConviso(customFields []TypeClickup.CustomField) string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
+// 			return customFields[i].ValueString
+// 		}
+// 	}
+// 	return ""
+// }
+
+func RetCustomFieldTypeConsulting(customFields []TypeClickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
-			return customFields[i].Value
+		if customFields[i].Id == VariablesConstant.CLICKUP_TYPE_CONSULTING_FIELD_ID {
+			return customFields[i].ValueInt
 		}
 	}
-	return ""
+	return 0
 }
 
 func RetCustomFieldCustomerPosition() (TypeClickup.CustomFieldsResponse, error) {
@@ -120,18 +130,29 @@ func VerifyTasks(taskEpic TypeClickup.TaskResponse) error {
 	return nil
 }
 
-func ReturnTasks(listId string) (TypeClickup.TasksResponse, error) {
+func ReturnTasks(listId string, taskType int) (TypeClickup.TasksResponse, error) {
 	var resultTasks TypeClickup.TasksResponse
 	var urlGetTasks bytes.Buffer
+
+	teste := strconv.FormatInt(int64(taskType), 10)
+
 	urlGetTasks.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
 	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/task?custom_fields=[")
-	urlGetTasks.WriteString("{\"field_id\":\"664816bc-a899-45ec-9801-5a1e5be9c5f6\",\"operator\":\">=\",\"value\":\"1\"}")
+	urlGetTasks.WriteString("{\"field_id\":\"")
+	urlGetTasks.WriteString(VariablesConstant.CLICKUP_TYPE_CONSULTING_FIELD_ID)
+	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
+	urlGetTasks.WriteString(teste)
+	urlGetTasks.WriteString("\"}")
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
+
+	if VariablesGlobal.Customer.HasStore {
+		urlGetTasks.WriteString("&subtasks=true")
+	}
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
 	if err != nil {
@@ -149,7 +170,7 @@ func ReturnTasks(listId string) (TypeClickup.TasksResponse, error) {
 		return resultTasks, errors.New("Error ReturnTasks response: " + err.Error())
 	}
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 	json.Unmarshal([]byte(string(data)), &resultTasks)
 	return resultTasks, nil
 }
@@ -194,6 +215,10 @@ func ReturnTask(taskId string) (TypeClickup.TaskResponse, error) {
 	urlGetTask.WriteString("task/")
 	urlGetTask.WriteString(taskId)
 
+	if VariablesGlobal.Customer.HasStore {
+		urlGetTask.WriteString("?include_subtasks=true")
+	}
+
 	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
 	if err != nil {
 		return task, errors.New("Error ReturnTask request: " + err.Error())
@@ -210,31 +235,34 @@ func ReturnTask(taskId string) (TypeClickup.TaskResponse, error) {
 	if err != nil {
 		return task, errors.New("Error ReturnTask response: " + err.Error())
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &task)
 
 	return task, nil
 }
 
-func RetNewStatus(statusPrincipal string, statusLinked string) string {
+func RetNewStatus(statusTask string, statusSubTask string) (string, bool) {
 
-	newReturn := statusPrincipal
+	newReturn := statusTask
+	hasUpdate := false
 
-	switch statusLinked {
+	switch statusSubTask {
 	case "backlog":
 		break
 	case "to do":
-		if statusPrincipal == "backlog" {
+		if statusTask == "backlog" {
 			newReturn = "to do"
+			hasUpdate = true
 		}
 		break
 	case "in progress", "done":
-		if statusPrincipal == "backlog" || statusPrincipal == "to do" || statusPrincipal == "blocked" {
+		if statusTask == "backlog" || statusTask == "to do" || statusTask == "blocked" {
 			newReturn = "in progress"
+			hasUpdate = true
 		}
 	}
-	return newReturn
+	return newReturn, hasUpdate
 }
 
 func RequestPutTask(taskId string, request TypeClickup.TaskRequest) error {
@@ -271,6 +299,39 @@ func RequestPutTask(taskId string, request TypeClickup.TaskRequest) error {
 	return nil
 }
 
+func RequestPutTaskStore(taskId string, request TypeClickup.TaskRequestStore) error {
+
+	var urlPutTask bytes.Buffer
+	urlPutTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
+	urlPutTask.WriteString("task/")
+	urlPutTask.WriteString(taskId)
+
+	body, _ := json.Marshal(request)
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPut, urlPutTask.String(), payload)
+	if err != nil {
+		return errors.New("Error RequestPutTask request: " + err.Error())
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return errors.New("Error RequestPutTask StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
+	if err != nil {
+		return errors.New("Error RequestPutTask response: " + err.Error())
+	}
+
+	io.ReadAll(resp.Body)
+
+	return nil
+}
 func RequestTaskTimeSpent(teamId string, request TypeClickup.TaskTimeSpentRequest) error {
 	var urlTaskTimeSpent bytes.Buffer
 	urlTaskTimeSpent.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)

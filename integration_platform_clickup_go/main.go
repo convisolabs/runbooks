@@ -10,9 +10,11 @@ import (
 
 	"github.com/jaytaylor/html2text"
 	"golang.org/x/exp/slices"
+
 	ServiceClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
 	TypeClickup "integration.platform.clickup/types/type_clickup"
+	TypeEnumClickupTypeConsulting "integration.platform.clickup/types/type_enum/type_enum_clickup_type_consulting"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
@@ -73,6 +75,186 @@ func MenuSetupConfig() {
 	}
 }
 
+func VerifyErrorsProjectWithStore(list TypeClickup.ListResponse) {
+	VerifySubtask(list, TypeEnumClickupTypeConsulting.EPIC, TypeEnumClickupTypeConsulting.STORE)
+	VerifySubtask(list, TypeEnumClickupTypeConsulting.STORE, TypeEnumClickupTypeConsulting.TASK)
+	VerifyTasks(list)
+}
+
+func VerifyTasks(list TypeClickup.ListResponse) {
+	tasks, err := ServiceClickup.ReturnTasks(list.Id, TypeEnumClickupTypeConsulting.TASK)
+
+	if err != nil {
+		fmt.Println("Error VerifyTasks :: ", err.Error())
+		return
+	}
+
+	for i := 0; i < len(tasks.Tasks); i++ {
+		task, err := ServiceClickup.ReturnTask(tasks.Tasks[i].Id)
+
+		if err != nil {
+			fmt.Println("Error VerifyTasks GetTask :: ", err.Error())
+			return
+		}
+
+		if task.Parent == "" {
+			fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ", strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url)
+			continue
+		}
+
+		if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "canceled" && strings.ToLower(task.Status.Status) != "blocked" {
+			if task.DueDate == "" {
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "DueDate empty", " :: ", task.Url)
+			}
+
+			if task.StartDate == "" {
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "StartDate empty", " :: ", task.Url)
+			}
+
+			if task.TimeEstimate == 0 {
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "TimeEstimate empty", " :: ", task.Url)
+			}
+
+			if task.Status.Status == "done" && task.TimeSpent == 0 {
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "TimeSpent empty", " :: ", task.Url)
+			}
+		}
+	}
+}
+
+func VerifySubtask(list TypeClickup.ListResponse, customFieldTypeConsulting int, customFieldTypeConsultingSubTask int) {
+
+	tasks, err := ServiceClickup.ReturnTasks(list.Id, customFieldTypeConsulting)
+
+	if err != nil {
+		fmt.Println("Error VerifySubtask :: ", err.Error())
+		return
+	}
+
+	for i := 0; i < len(tasks.Tasks); i++ {
+		task, err := ServiceClickup.ReturnTask(tasks.Tasks[i].Id)
+
+		if err != nil {
+			fmt.Println("Error VerifySubtask GetTask :: ", err.Error())
+			return
+		}
+
+		if len(task.SubTasks) == 0 {
+			fmt.Println(TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsulting),
+				" Without ",
+				TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsultingSubTask),
+				" :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ", strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url)
+			continue
+		}
+
+		for j := 0; j < len(task.SubTasks); j++ {
+			subTask, err := ServiceClickup.ReturnTask(task.SubTasks[j].Id)
+			if err != nil {
+				fmt.Println("Error VerifySubtask GetTask GetSubTask :: ", err.Error())
+				return
+			}
+
+			//TODO: Falta verificar se a lista é uma história
+			customFieldsSubTask := ServiceClickup.RetCustomFieldTypeConsulting(subTask.CustomFields)
+
+			if customFieldsSubTask != customFieldTypeConsultingSubTask {
+				fmt.Println(
+					subTask.Name,
+					" should be ",
+					TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsultingSubTask),
+					" but is ",
+					TypeEnumClickupTypeConsulting.ToString(customFieldsSubTask),
+					" :: ", list.Name, " :: ", strings.ToLower(subTask.Status.Status), " :: ", subTask.Url)
+				continue
+			}
+		}
+	}
+}
+
+func UpdateProjectWithStore(list TypeClickup.ListResponse) {
+	UpdateSubtask(list, TypeEnumClickupTypeConsulting.TASK, TypeEnumClickupTypeConsulting.STORE)
+	UpdateSubtask(list, TypeEnumClickupTypeConsulting.STORE, TypeEnumClickupTypeConsulting.EPIC)
+}
+
+func UpdateSubtask(list TypeClickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
+
+	tasks, err := ServiceClickup.ReturnTasks(list.Id, typeConsultingTask)
+
+	if err != nil {
+		fmt.Println("Error UpdateSubtask :: ", err.Error())
+		return
+	}
+
+	var sliceParentId []string
+
+	for i := 0; i < len(tasks.Tasks); i++ {
+		if tasks.Tasks[i].Parent == "" {
+			continue
+		}
+
+		if slices.Contains(sliceParentId, tasks.Tasks[i].Parent) {
+			continue
+		}
+
+		sliceParentId = append(sliceParentId, tasks.Tasks[i].Parent)
+
+		taskParent, err := ServiceClickup.ReturnTask((tasks.Tasks[i].Parent))
+
+		if err != nil {
+			fmt.Println("Error UpdateSubtask GetTask Parent :: ", err.Error())
+			continue
+		}
+
+		var requestTask TypeClickup.TaskRequestStore
+		requestTask.Status = taskParent.Status.Status
+		requestTask.DueDate, _ = strconv.ParseInt(taskParent.DueDate, 10, 64)
+		requestTask.StartDate, _ = strconv.ParseInt(taskParent.StartDate, 10, 64)
+		allTaskDone := true
+		hasUpdate := false
+		for j := 0; j < len(taskParent.SubTasks); j++ {
+			subTask, err := ServiceClickup.ReturnTask(taskParent.SubTasks[j].Id)
+			if err != nil {
+				fmt.Println("Error UpdateSubtask GetTask SubTask :: ", err.Error())
+				return
+			}
+			var auxStartDate int64
+			var auxDueDate int64
+
+			auxStartDate, _ = strconv.ParseInt(subTask.StartDate, 10, 64)
+			auxDueDate, _ = strconv.ParseInt(subTask.DueDate, 10, 64)
+			if (auxStartDate < requestTask.StartDate) || (auxStartDate != 0 && requestTask.StartDate == 0) {
+				requestTask.StartDate = auxStartDate
+				hasUpdate = true
+			}
+
+			if (auxDueDate > requestTask.DueDate) || (auxDueDate != 0 && requestTask.DueDate == 0) {
+				requestTask.DueDate = auxDueDate
+				hasUpdate = true
+			}
+
+			hasUpdateStatus := false
+			requestTask.Status, hasUpdateStatus = ServiceClickup.RetNewStatus(requestTask.Status, subTask.Status.Status)
+
+			if hasUpdateStatus {
+				hasUpdate = true
+			}
+
+			if subTask.Status.Status != "done" && subTask.Status.Status != "canceled" {
+				allTaskDone = false
+			}
+		}
+
+		if allTaskDone {
+			requestTask.Status = "done"
+			hasUpdate = true
+		}
+
+		if hasUpdate {
+			ServiceClickup.RequestPutTaskStore(taskParent.Id, requestTask)
+		}
+	}
+}
+
 func UpdateClickUpConvisoPlatform(justVerify bool) {
 	fmt.Println("...Starting ClickUp Automation...")
 
@@ -84,11 +266,24 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 	}
 
 	fmt.Println("...Searching valid list...")
+
+	lstCustomersYamlFile := Functions.LoadCustomerByYamlFile()
+
 	for i := 0; i < len(lists.Lists); i++ {
 
 		fmt.Println("Found List ", lists.Lists[i].Name)
 
-		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, Functions.LoadCustomerByYamlFile()) {
+		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, lstCustomersYamlFile) {
+
+			if justVerify && VariablesGlobal.Customer.HasStore {
+				VerifyErrorsProjectWithStore(lists.Lists[i])
+				return
+			}
+
+			if !justVerify && VariablesGlobal.Customer.HasStore {
+				UpdateProjectWithStore(lists.Lists[i])
+				return
+			}
 
 			var sliceEpicId []string
 
@@ -96,7 +291,7 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 			time.Sleep(time.Second)
 
-			tasks, err := ServiceClickup.ReturnTasks(lists.Lists[i].Id)
+			tasks, err := ServiceClickup.ReturnTasks(lists.Lists[i].Id, 2)
 
 			if err != nil {
 				fmt.Println("Error return tasks: ", err.Error())
@@ -133,7 +328,7 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 				time.Sleep(time.Second)
 
-				taskEpic, err := ServiceClickup.ReturnTask(auxEpicTaskId)
+				task, err := ServiceClickup.ReturnTask(auxEpicTaskId)
 				if err != nil {
 					fmt.Println("Error return task: ", err.Error())
 					return
@@ -141,7 +336,7 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 				if justVerify {
 					time.Sleep(time.Second)
-					ServiceClickup.VerifyTasks(taskEpic)
+					ServiceClickup.VerifyTasks(task)
 				} else {
 					time.Sleep(time.Second)
 
@@ -149,25 +344,25 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 					var timeSpent int64
 					var requestTask TypeClickup.TaskRequest
 
-					for k := 0; k < len(taskEpic.LinkedTasks); k++ {
+					for k := 0; k < len(task.LinkedTasks); k++ {
 
 						auxTaskId := ""
 
-						if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
-							auxTaskId = taskEpic.LinkedTasks[k].TaskId
+						if task.Id == task.LinkedTasks[k].LinkId {
+							auxTaskId = task.LinkedTasks[k].TaskId
 						} else {
-							auxTaskId = taskEpic.LinkedTasks[k].LinkId
+							auxTaskId = task.LinkedTasks[k].LinkId
 						}
 
-						taskAux, err := ServiceClickup.ReturnTask(auxTaskId)
+						task, err := ServiceClickup.ReturnTask(auxTaskId)
 						if err != nil {
-							fmt.Println("Error taskAux: " + err.Error())
+							fmt.Println("Error task: " + err.Error())
 							continue
 						}
-						auxDuoDate, _ := strconv.ParseInt(taskAux.DueDate, 10, 64)
-						auxStartDate, _ := strconv.ParseInt(taskAux.StartDate, 10, 64)
-						requestTask.TimeEstimate = requestTask.TimeEstimate + taskAux.TimeEstimate
-						timeSpent = timeSpent + taskAux.TimeSpent
+						auxDuoDate, _ := strconv.ParseInt(task.DueDate, 10, 64)
+						auxStartDate, _ := strconv.ParseInt(task.StartDate, 10, 64)
+						requestTask.TimeEstimate = requestTask.TimeEstimate + task.TimeEstimate
+						timeSpent = timeSpent + task.TimeSpent
 						if auxDuoDate > requestTask.DueDate {
 							requestTask.DueDate = auxDuoDate
 						}
@@ -177,21 +372,21 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 						}
 
 						//caso tenha data no epic, não alterar qdo for 0
-						if requestTask.StartDate == 0 && taskEpic.StartDate != "0" {
-							requestTask.StartDate, _ = strconv.ParseInt(taskEpic.StartDate, 10, 64)
+						if requestTask.StartDate == 0 && task.StartDate != "0" {
+							requestTask.StartDate, _ = strconv.ParseInt(task.StartDate, 10, 64)
 						}
 
-						if taskAux.Status.Status != "done" && taskAux.Status.Status != "canceled" {
+						if task.Status.Status != "done" && task.Status.Status != "canceled" {
 							allSubTasksDone = false
 						}
 
-						requestTask.Status = ServiceClickup.RetNewStatus(taskEpic.Status.Status, taskAux.Status.Status)
-						taskEpic.Status.Status = requestTask.Status
+						requestTask.Status, _ = ServiceClickup.RetNewStatus(task.Status.Status, task.Status.Status)
+						task.Status.Status = requestTask.Status
 
 						//precisa alterar o requirements
 						//https://app.convisoappsec.com/scopes/553/projects/15296/project_requirements/232561
 
-						ServiceConvisoPlatform.ChangeActivitiesStatus(ServiceClickup.RetCustomFieldUrlConviso(taskAux.CustomFields))
+						//ServiceConvisoPlatform.ChangeActivitiesStatus(ServiceClickup.RetCustomFieldUrlConviso(task.CustomFields))
 
 					}
 
@@ -199,18 +394,18 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 						requestTask.Status = "done"
 					}
 
-					if (timeSpent - taskEpic.TimeSpent) > 0 {
+					if (timeSpent - task.TimeSpent) > 0 {
 						var taskTimeSpentRequest TypeClickup.TaskTimeSpentRequest
-						taskTimeSpentRequest.Duration = timeSpent - taskEpic.TimeSpent
+						taskTimeSpentRequest.Duration = timeSpent - task.TimeSpent
 						taskTimeSpentRequest.Start = time.Now().UTC().UnixMilli()
-						taskTimeSpentRequest.TaskId = taskEpic.Id
-						ServiceClickup.RequestTaskTimeSpent(taskEpic.TeamId, taskTimeSpentRequest)
+						taskTimeSpentRequest.TaskId = task.Id
+						ServiceClickup.RequestTaskTimeSpent(task.TeamId, taskTimeSpentRequest)
 					}
 
-					err := ServiceClickup.RequestPutTask(taskEpic.Id, requestTask)
+					err := ServiceClickup.RequestPutTask(task.Id, requestTask)
 
 					if err != nil {
-						fmt.Println("Error taskAux: " + err.Error())
+						fmt.Println("Error task: " + err.Error())
 					}
 
 					//precisa alterar o status no conviso platform

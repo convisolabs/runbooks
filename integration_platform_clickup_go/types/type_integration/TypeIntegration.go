@@ -5,4 +5,5 @@ type CustomerType struct {
 	PlatformID          int    `yaml:"platformid"`
 	ClickUpListId       string `yaml:"clickuplistid"`
 	ClickUpCustomerList string `yaml:"clickupcustomerlist"`
+	HasStore            bool   `yaml:"hasStore"`
 }

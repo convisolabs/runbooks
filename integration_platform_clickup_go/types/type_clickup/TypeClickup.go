@@ -32,6 +32,7 @@ type TaskResponse struct {
 	List         ListResponse       `json:"list"`
 	CustomFields []CustomField      `json:"custom_fields"`
 	Url          string             `json:"url"`
+	Parent       string             `json:"parent"`
 }
 
 type TasksResponse struct {
@@ -43,6 +44,12 @@ type TaskRequest struct {
 	DueDate      int64  `json:"due_date"`
 	TimeEstimate int64  `json:"time_estimate"`
 	Status       string `json:"status"`
+}
+
+type TaskRequestStore struct {
+	StartDate int64  `json:"start_date"`
+	DueDate   int64  `json:"due_date"`
+	Status    string `json:"status"`
 }
 
 type TaskTimeSpentRequest struct {
@@ -74,7 +81,8 @@ type CustomField struct {
 	Id         string                `json:"id"`
 	Name       string                `json:"name"`
 	TypeConfig CustomFieldTypeConfig `json:"type_config"`
-	Value      string                `json:"value"`
+	//ValueString string                `json:"value"`
+	ValueInt int `json:"value"`
 }
 
 type CustomFieldTypeConfig struct {

@@ -3,18 +3,19 @@ package Functions
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 	TypeIntegration "integration.platform.clickup/types/type_integration"
+	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 func LoadCustomerByYamlFile() []TypeIntegration.CustomerType {
 	// Read the file
-	data, err := ioutil.ReadFile("projects.yaml")
+	data, err := os.ReadFile("projects.yaml")
+
 	if err != nil {
 		fmt.Println("Error ReadFile LoadYamlFileProjects: ", err.Error())
 		return nil
@@ -38,6 +39,7 @@ func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []Typ
 	for _, customer := range customers {
 		if customer.ClickUpListId == clickUpListId {
 			result = true
+			VariablesGlobal.Customer = customer
 			break
 		}
 	}
