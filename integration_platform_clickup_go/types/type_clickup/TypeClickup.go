@@ -33,6 +33,7 @@ type TaskResponse struct {
 	CustomFields []CustomField      `json:"custom_fields"`
 	Url          string             `json:"url"`
 	Parent       string             `json:"parent"`
+	Assignees    []AssigneeField    `json:"assignees"`
 }
 
 type TasksResponse struct {
@@ -82,7 +83,12 @@ type CustomField struct {
 	Name       string                `json:"name"`
 	TypeConfig CustomFieldTypeConfig `json:"type_config"`
 	//ValueString string                `json:"value"`
-	ValueInt int `json:"value"`
+	Value interface{} `json:"value"`
+}
+
+type AssigneeField struct {
+	Id       int64  `json:"id"`
+	Username string `json:"username"`
 }
 
 type CustomFieldTypeConfig struct {

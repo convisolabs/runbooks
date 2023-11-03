@@ -18,6 +18,16 @@ import (
 	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
+func RetAssigness(assignees []TypeClickup.AssigneeField) string {
+	ret := ""
+
+	for i := 0; i < len(assignees); i++ {
+		ret = ret + assignees[i].Username + ";"
+	}
+
+	return ret
+}
+
 func RetCustomerPosition() (string, error) {
 	result := ""
 	customFieldsResponse, err := RetCustomFieldCustomerPosition()
@@ -42,19 +52,19 @@ func RetCustomerPosition() (string, error) {
 	return result, nil
 }
 
-// func RetCustomFieldUrlConviso(customFields []TypeClickup.CustomField) string {
-// 	for i := 0; i < len(customFields); i++ {
-// 		if customFields[i].Id == VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
-// 			return customFields[i].ValueString
-// 		}
-// 	}
-// 	return ""
-// }
+func RetCustomFieldUrlConviso(customFields []TypeClickup.CustomField) string {
+	for i := 0; i < len(customFields); i++ {
+		if customFields[i].Id == VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
+			return customFields[i].Value.(string)
+		}
+	}
+	return ""
+}
 
 func RetCustomFieldTypeConsulting(customFields []TypeClickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
 		if customFields[i].Id == VariablesConstant.CLICKUP_TYPE_CONSULTING_FIELD_ID {
-			return customFields[i].ValueInt
+			return int(customFields[i].Value.(float64))
 		}
 	}
 	return 0
@@ -201,7 +211,7 @@ func ReturnLists() (TypeClickup.ListsResponse, error) {
 		return result, errors.New("Error ReturnLists response: " + err.Error())
 	}
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &result)
 
