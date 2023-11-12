@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"integration_platform_clickup_go/utils/variables_global"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 
 	TypeClickup "integration.platform.clickup/types/type_clickup"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
-	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 func RetAssigness(assignees []TypeClickup.AssigneeField) string {
@@ -41,7 +41,7 @@ func RetCustomerPosition() (string, error) {
 
 		if customFieldsResponse.Fields[i].Id == VariablesConstant.CLICKUP_CUSTOMER_FIELD_ID {
 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(VariablesGlobal.Customer.ClickUpCustomerList) {
+				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(variables_global.Customer.ClickUpCustomerList) {
 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
 					found = true
 					break
@@ -75,7 +75,7 @@ func RetCustomFieldCustomerPosition() (TypeClickup.CustomFieldsResponse, error) 
 	var urlGetTasks bytes.Buffer
 	urlGetTasks.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
-	urlGetTasks.WriteString(VariablesGlobal.Customer.ClickUpListId)
+	urlGetTasks.WriteString(variables_global.Customer.ClickUpListId)
 	urlGetTasks.WriteString("/field")
 
 	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
@@ -160,7 +160,7 @@ func ReturnTasks(listId string, taskType int) (TypeClickup.TasksResponse, error)
 	urlGetTasks.WriteString("&date_updated_gt=")
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
 
-	if VariablesGlobal.Customer.HasStore {
+	if variables_global.Customer.HasStore {
 		urlGetTasks.WriteString("&subtasks=true")
 	}
 
@@ -225,7 +225,7 @@ func ReturnTask(taskId string) (TypeClickup.TaskResponse, error) {
 	urlGetTask.WriteString("task/")
 	urlGetTask.WriteString(taskId)
 
-	if VariablesGlobal.Customer.HasStore {
+	if variables_global.Customer.HasStore {
 		urlGetTask.WriteString("?include_subtasks=true")
 	}
 
@@ -248,6 +248,10 @@ func ReturnTask(taskId string) (TypeClickup.TaskResponse, error) {
 	data, _ := io.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &task)
+
+	//add customFields
+	task.CustomField.TypeConsulting = RetCustomFieldTypeConsulting(task.CustomFields)
+	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
 
 	return task, nil
 }
@@ -381,7 +385,7 @@ func TaskCreateRequest(request TypeClickup.TaskCreateRequest) (TypeClickup.TaskR
 	var urlCreateTask bytes.Buffer
 	urlCreateTask.WriteString(VariablesConstant.CLICKUP_API_URL_BASE)
 	urlCreateTask.WriteString("list/")
-	urlCreateTask.WriteString(VariablesGlobal.Customer.ClickUpListId)
+	urlCreateTask.WriteString(variables_global.Customer.ClickUpListId)
 	urlCreateTask.WriteString("/task")
 
 	body, _ := json.Marshal(request)

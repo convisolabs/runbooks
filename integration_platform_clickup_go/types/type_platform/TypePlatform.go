@@ -47,6 +47,7 @@ type ActivityCollectionResponse struct {
 	Id          string `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	Status      string `json:"status"`
 }
 
 type CompanyCollectionResponse struct {
@@ -124,4 +125,22 @@ type DeployTypeResponse struct {
 
 type PageParameters struct {
 	Page int `json:"Page"`
+}
+
+type Project struct {
+	Id         string                       `json:"id"`
+	Label      string                       `json:"label"`
+	Objective  string                       `json:"objective"`
+	Scope      string                       `json:"scope"`
+	Company    CompanyCollectionResponse    `json:"company"`
+	Activities []ActivityCollectionResponse `json:"activities"`
+	Status     string                       `json:"status"`
+}
+
+type ProjectResponse struct {
+	Data ProjectDataResponse `json:"data"`
+}
+
+type ProjectDataResponse struct {
+	Project Project `json:"project"`
 }

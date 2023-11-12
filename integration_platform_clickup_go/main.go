@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"integration_platform_clickup_go/types/type_enum/enum_clickup_type_consulting"
+	"integration_platform_clickup_go/utils/variables_global"
 	"strconv"
 	"strings"
 	"time"
@@ -14,11 +16,9 @@ import (
 	ServiceClickup "integration.platform.clickup/services/service_clickup"
 	ServiceConvisoPlatform "integration.platform.clickup/services/service_conviso_platform"
 	TypeClickup "integration.platform.clickup/types/type_clickup"
-	TypeEnumClickupTypeConsulting "integration.platform.clickup/types/type_enum/type_enum_clickup_type_consulting"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
-	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 const BANNER = `
@@ -46,16 +46,14 @@ func LoadProjects() {
 		fmt.Println("Invalid Input")
 		return
 	}
-
-	VariablesGlobal.Customer = projects[input]
-
+	variables_global.Customer = projects[input]
 }
 
 func MenuSetupConfig() {
 	var input int
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Menu Config-----")
-		fmt.Println("Project Selected: ", VariablesGlobal.Customer.IntegrationName)
+		fmt.Println("Project Selected: ", variables_global.Customer.IntegrationName)
 		fmt.Println("0 - Previous Menu")
 		fmt.Println("1 - Choose Project Work")
 		fmt.Print("Enter the option: ")
@@ -76,13 +74,13 @@ func MenuSetupConfig() {
 }
 
 func VerifyErrorsProjectWithStore(list TypeClickup.ListResponse) {
-	VerifySubtask(list, TypeEnumClickupTypeConsulting.EPIC, TypeEnumClickupTypeConsulting.STORE)
-	VerifySubtask(list, TypeEnumClickupTypeConsulting.STORE, TypeEnumClickupTypeConsulting.TASK)
+	VerifySubtask(list, int(enum_clickup_type_consulting.STORE), int(enum_clickup_type_consulting.STORE))
+	VerifySubtask(list, int(enum_clickup_type_consulting.STORE), int(enum_clickup_type_consulting.TASK))
 	VerifyTasks(list)
 }
 
 func VerifyTasks(list TypeClickup.ListResponse) {
-	tasks, err := ServiceClickup.ReturnTasks(list.Id, TypeEnumClickupTypeConsulting.TASK)
+	tasks, err := ServiceClickup.ReturnTasks(list.Id, int(enum_clickup_type_consulting.TASK))
 
 	if err != nil {
 		fmt.Println("Error VerifyTasks :: ", err.Error())
@@ -146,9 +144,9 @@ func VerifySubtask(list TypeClickup.ListResponse, customFieldTypeConsulting int,
 		}
 
 		if len(task.SubTasks) == 0 {
-			fmt.Println(TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsulting),
+			fmt.Println(enum_clickup_type_consulting.ToString(customFieldTypeConsulting),
 				" Without ",
-				TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsultingSubTask),
+				enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
 				" :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ", strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
 				" :: ", ServiceClickup.RetAssigness(tasks.Tasks[i].Assignees))
 			continue
@@ -167,9 +165,9 @@ func VerifySubtask(list TypeClickup.ListResponse, customFieldTypeConsulting int,
 				fmt.Println(
 					subTask.Name,
 					" should be ",
-					TypeEnumClickupTypeConsulting.ToString(customFieldTypeConsultingSubTask),
+					enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
 					" but is ",
-					TypeEnumClickupTypeConsulting.ToString(customFieldsSubTask),
+					enum_clickup_type_consulting.ToString(customFieldsSubTask),
 					" :: ", list.Name, " :: ", strings.ToLower(subTask.Status.Status), " :: ", subTask.Url,
 					" :: ", ServiceClickup.RetAssigness(subTask.Assignees))
 				continue
@@ -179,8 +177,8 @@ func VerifySubtask(list TypeClickup.ListResponse, customFieldTypeConsulting int,
 }
 
 func UpdateProjectWithStore(list TypeClickup.ListResponse) {
-	UpdateSubtask(list, TypeEnumClickupTypeConsulting.TASK, TypeEnumClickupTypeConsulting.STORE)
-	UpdateSubtask(list, TypeEnumClickupTypeConsulting.STORE, TypeEnumClickupTypeConsulting.EPIC)
+	UpdateSubtask(list, enum_clickup_type_consulting.TASK, enum_clickup_type_consulting.STORE)
+	UpdateSubtask(list, enum_clickup_type_consulting.STORE, enum_clickup_type_consulting.EPIC)
 }
 
 func UpdateSubtask(list TypeClickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
@@ -193,6 +191,7 @@ func UpdateSubtask(list TypeClickup.ListResponse, typeConsultingTask int, typeCo
 	}
 
 	var sliceParentId []string
+	var convisoPlatformProject TypePlatform.Project
 
 	for i := 0; i < len(tasks.Tasks); i++ {
 		if tasks.Tasks[i].Parent == "" {
@@ -249,6 +248,29 @@ func UpdateSubtask(list TypeClickup.ListResponse, typeConsultingTask int, typeCo
 			if subTask.Status.Status != "done" && subTask.Status.Status != "canceled" {
 				allTaskDone = false
 			}
+
+			if taskParent.CustomField.TypeConsulting == enum_clickup_type_consulting.STORE &&
+				taskParent.CustomField.LinkConvisoPlatform != "" && convisoPlatformProject.Id == "" {
+
+				projectId, err := ServiceConvisoPlatform.RetProjectIdCustomField(taskParent.CustomField.LinkConvisoPlatform)
+
+				if err == nil {
+					convisoPlatformProject, err = ServiceConvisoPlatform.GetProject(projectId)
+					if err != nil {
+						fmt.Println("Error GetProject Conviso Platform :: ", err.Error())
+					}
+				} else {
+					fmt.Println("Error RetProjectIdCustomField Conviso Platform :: ", err.Error())
+				}
+			}
+
+			//update the activity in conviso platform project
+			err = ServiceConvisoPlatform.UpdateActivityRequirement(subTask, convisoPlatformProject)
+
+			if err != nil {
+				fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
+			}
+
 		}
 
 		if allTaskDone {
@@ -258,6 +280,10 @@ func UpdateSubtask(list TypeClickup.ListResponse, typeConsultingTask int, typeCo
 
 		if hasUpdate {
 			ServiceClickup.RequestPutTaskStore(taskParent.Id, requestTask)
+		}
+
+		if convisoPlatformProject.Id != "" {
+			fmt.Print("teste")
 		}
 	}
 }
@@ -282,12 +308,12 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 		if Functions.CustomerExistsYamlFileByClickUpListId(lists.Lists[i].Id, lstCustomersYamlFile) {
 
-			if justVerify && VariablesGlobal.Customer.HasStore {
+			if justVerify && variables_global.Customer.HasStore {
 				VerifyErrorsProjectWithStore(lists.Lists[i])
 				return
 			}
 
-			if !justVerify && VariablesGlobal.Customer.HasStore {
+			if !justVerify && variables_global.Customer.HasStore {
 				UpdateProjectWithStore(lists.Lists[i])
 				return
 			}
@@ -482,7 +508,7 @@ func MainMenu() {
 
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Main Menu-----")
-		fmt.Println("Project Selected: ", VariablesGlobal.Customer.IntegrationName)
+		fmt.Println("Project Selected: ", variables_global.Customer.IntegrationName)
 		fmt.Println("0 - Exit")
 		fmt.Println("1 - Menu Setup")
 		fmt.Println("2 - Create Project Conviso Platform/ClickUp")
@@ -504,7 +530,7 @@ func MainMenu() {
 		case 1:
 			MenuSetupConfig()
 		case 2:
-			if VariablesGlobal.Customer.PlatformID == 0 {
+			if variables_global.Customer.PlatformID == 0 {
 				fmt.Println("No Project Selected!")
 			} else {
 				CreateProject()
@@ -552,7 +578,7 @@ func CreateProject() {
 		return
 	}
 
-	createConvisoPlatform := TypePlatform.ProjectCreateInputRequest{VariablesGlobal.Customer.PlatformID,
+	createConvisoPlatform := TypePlatform.ProjectCreateInputRequest{variables_global.Customer.PlatformID,
 		label, goal, scope, typeId,
 		Functions.ConvertStringToArrayInt(playbookIds),
 		time.Now().Add(time.Hour * 24).Format("2006-01-02"), "1"}
@@ -563,7 +589,7 @@ func CreateProject() {
 		fmt.Println("Error CreateProject: ", err.Error())
 	}
 
-	project, err := ServiceConvisoPlatform.ConfirmProjectCreate(VariablesGlobal.Customer.PlatformID, label)
+	project, err := ServiceConvisoPlatform.ConfirmProjectCreate(variables_global.Customer.PlatformID, label)
 
 	if err != nil {
 		fmt.Println("Erro CreateProject: Contact the system administrator")
@@ -583,12 +609,12 @@ func CreateProject() {
 
 	customFieldUrlConvisoPlatform := TypeClickup.CustomFieldRequest{
 		VariablesConstant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID,
-		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(VariablesGlobal.Customer.PlatformID) + "/projects/" + project.Id,
+		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(variables_global.Customer.PlatformID) + "/projects/" + project.Id,
 	}
 
 	customFieldTypeConsulting := TypeClickup.CustomFieldRequest{
 		VariablesConstant.CLICKUP_TYPE_CONSULTING_FIELD_ID,
-		strconv.Itoa(TypeEnumClickupTypeConsulting.STORE),
+		strconv.Itoa(enum_clickup_type_consulting.STORE),
 	}
 
 	customFieldsMainTask := []TypeClickup.CustomFieldRequest{
@@ -619,7 +645,7 @@ func CreateProject() {
 			var convisoPlatformUrl bytes.Buffer
 			convisoPlatformUrl.WriteString(VariablesConstant.CONVISO_PLATFORM_URL_BASE)
 			convisoPlatformUrl.WriteString("scopes/")
-			convisoPlatformUrl.WriteString(strconv.Itoa(VariablesGlobal.Customer.PlatformID))
+			convisoPlatformUrl.WriteString(strconv.Itoa(variables_global.Customer.PlatformID))
 			convisoPlatformUrl.WriteString("/projects/")
 			convisoPlatformUrl.WriteString(project.Id)
 			convisoPlatformUrl.WriteString("/project_requirements/")
@@ -632,7 +658,7 @@ func CreateProject() {
 
 			customFieldTypeConsultingSubTask := TypeClickup.CustomFieldRequest{
 				VariablesConstant.CLICKUP_TYPE_CONSULTING_FIELD_ID,
-				strconv.Itoa(TypeEnumClickupTypeConsulting.TASK),
+				strconv.Itoa(enum_clickup_type_consulting.TASK),
 			}
 
 			customFieldsSubTask := []TypeClickup.CustomFieldRequest{

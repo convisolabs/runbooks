@@ -1,4 +1,4 @@
-module integration_platform_clickup_go/types
+module integration_platform_clickup_go
 
 go 1.21.1
 
@@ -10,13 +10,15 @@ replace integration.platform.clickup/types/type_integration => /Users/zani0x03/d
 
 replace integration.platform.clickup/types/type_enum/type_enum_clickup_type_consulting => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/types/type_enum/type_enum_clickup_type_consulting
 
+replace integration.platform.clickup/types/type_enum/type_enum_conviso_platform_activity_status => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/types/type_enum/type_enum_conviso_platform_activity_status
+
 replace integration.platform.clickup/services/service_clickup => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/services/service_clickup
 
 replace integration.platform.clickup/services/service_conviso_platform => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/services/service_conviso_platform
 
 replace integration.platform.clickup/utils/functions => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/functions
 
-replace integration.platform.clickup/utils/variables_global => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/variables_global
+replace integration.platform.clickup/utils/variables_global => ./utils/variables_global
 
 replace integration.platform.clickup/utils/variables_constant => /Users/zani0x03/dev/runbooks/integration_platform_clickup_go/utils/variables_constant
 
@@ -37,6 +39,7 @@ require (
 	integration.platform.clickup/services/service_conviso_platform v0.0.0-00010101000000-000000000000 // indirect
 	integration.platform.clickup/types/type_clickup v0.0.0-00010101000000-000000000000 // indirect
 	integration.platform.clickup/types/type_enum/type_enum_clickup_type_consulting v0.0.0-00010101000000-000000000000 // indirect
+	integration.platform.clickup/types/type_enum/type_enum_conviso_platform_activity_status v0.0.0-00010101000000-000000000000 // indirect
 	integration.platform.clickup/types/type_integration v0.0.0-00010101000000-000000000000 // indirect
 	integration.platform.clickup/types/type_platform v0.0.0-00010101000000-000000000000 // indirect
 	integration.platform.clickup/utils/functions v0.0.0-00010101000000-000000000000 // indirect

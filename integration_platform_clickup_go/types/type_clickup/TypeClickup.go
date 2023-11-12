@@ -18,6 +18,12 @@ type TaskStatusResponse struct {
 	Status string `json:"status"`
 }
 
+type CustomFieldCustomized struct {
+	TypeConsulting      int
+	Customer            string
+	LinkConvisoPlatform string
+}
+
 type TaskResponse struct {
 	Id           string             `json:"id"`
 	Name         string             `json:"name"`
@@ -34,6 +40,7 @@ type TaskResponse struct {
 	Url          string             `json:"url"`
 	Parent       string             `json:"parent"`
 	Assignees    []AssigneeField    `json:"assignees"`
+	CustomField  CustomFieldCustomized
 }
 
 type TasksResponse struct {

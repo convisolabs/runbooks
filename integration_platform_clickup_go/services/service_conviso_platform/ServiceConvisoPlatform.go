@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"integration_platform_clickup_go/utils/variables_global"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,10 +16,10 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
+	TypeClickup "integration.platform.clickup/types/type_clickup"
 	TypePlatform "integration.platform.clickup/types/type_platform"
 	Functions "integration.platform.clickup/utils/functions"
 	VariablesConstant "integration.platform.clickup/utils/variables_constant"
-	VariablesGlobal "integration.platform.clickup/utils/variables_global"
 )
 
 const CONVISO_PLATFORM_PROJECT_TYPES = `
@@ -111,6 +113,28 @@ const CONVISO_PLATFORM_PROJECTS_QUERY = `
 				currentPage
 				totalPages
 			}
+		}
+	}
+`
+
+const CONVISO_PLATFORM_PROJECT_QUERY = `
+	query Project($id: ID!)
+	{
+		project(id: $id) {
+			activities{
+				id
+				title,
+				description,
+				status
+			}
+			company{
+				id
+			}
+			id
+			label
+			objective
+			scope,
+			status
 		}
 	}
 `
@@ -211,6 +235,14 @@ const CONVISO_PLATFORM_PROJECT_CREATE = `
 	}
 `
 
+// const CONVISO_PLATFORM_PROJECT_CREATE = `
+// 	mutation UpdateActivityStatusToStart($input:Int!)
+// 	{
+// 		updateActivityStatusToFinish(input: { activityId: 1 }) {
+// 		input: $input
+// 		)
+// `
+
 func RetDeploys() {
 	var result TypePlatform.DeployTypeResponse
 
@@ -289,10 +321,10 @@ func SearchRequimentsPlatform(reqSearch string) {
 
 	var platformId int
 
-	if VariablesGlobal.Customer.PlatformID == 0 {
+	if variables_global.Customer.PlatformID == 0 {
 		platformId = 11
 	} else {
-		platformId = VariablesGlobal.Customer.PlatformID
+		platformId = variables_global.Customer.PlatformID
 	}
 
 	for i := 0; i <= result.Data.Playbooks.Metadata.TotalPages; i++ {
@@ -440,11 +472,44 @@ func ConfirmProjectCreate(companyId int, label string) (TypePlatform.ProjectColl
 
 	auxCompanyId, _ := strconv.Atoi(result.Data.Projects.Collection[0].Company.Id)
 
-	if auxCompanyId != VariablesGlobal.Customer.PlatformID {
+	if auxCompanyId != variables_global.Customer.PlatformID {
 		return TypePlatform.ProjectCollectionResponse{}, errors.New("Different Company")
 	}
 
 	return result.Data.Projects.Collection[0], nil
+}
+
+func GetProject(id int) (TypePlatform.Project, error) {
+	var result TypePlatform.ProjectResponse
+
+	parameters, _ := json.Marshal(map[string]int{
+		"id": id,
+	})
+
+	body, _ := json.Marshal(map[string]string{
+		"query":     CONVISO_PLATFORM_PROJECT_QUERY,
+		"variables": string(parameters),
+	})
+
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPost, VariablesConstant.CONVISO_PLATFORM_API_GRAPHQL, payload)
+	if err != nil {
+		return TypePlatform.Project{}, errors.New("Error GetProject New Request " + err.Error())
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("x-api-key", os.Getenv("CONVISO_PLATFORM_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		return TypePlatform.Project{}, errors.New("Error GetProject ClientDo " + err.Error())
+	}
+	data, _ := io.ReadAll(resp.Body)
+
+	json.Unmarshal([]byte(string(data)), &result)
+
+	return result.Data.Project, nil
 }
 
 func AddPlatformProject(inputParameters TypePlatform.ProjectCreateInputRequest) error {
@@ -478,7 +543,38 @@ func AddPlatformProject(inputParameters TypePlatform.ProjectCreateInputRequest) 
 	return nil
 }
 
-func RequirementsId(text string) (int, error) {
+// func ChangeActivitiesStatusGraphQl(activityId int) error {
+// 	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
+
+// 	projectParameters := TypePlatform.ProjectCreateRequest{inputParameters}
+
+// 	parameters, _ := json.Marshal(projectParameters)
+// 	body, _ := json.Marshal(map[string]string{
+// 		"query":     CONVISO_PLATFORM_PROJECT_CREATE,
+// 		"variables": string(parameters),
+// 	})
+
+// 	payload := bytes.NewBuffer(body)
+// 	req, err := http.NewRequest(http.MethodPost, VariablesConstant.CONVISO_PLATFORM_API_GRAPHQL, payload)
+// 	if err != nil {
+// 		return errors.New("Error AddPlatformProject New Request: " + err.Error())
+// 	}
+
+// 	req.Header.Add("Content-Type", "application/json")
+// 	req.Header.Add("x-api-key", tokenPlatform)
+// 	client := &http.Client{Timeout: time.Second * 10}
+// 	resp, err := client.Do(req)
+// 	defer req.Body.Close()
+// 	if err != nil {
+// 		return errors.New("Error AddPlatformProject ClientDo: " + err.Error())
+// 	}
+
+// 	ioutil.ReadAll(resp.Body)
+
+// 	return nil
+// }
+
+func RetActivityIdCustomField(text string) (int, error) {
 
 	textSplit := strings.Split(text, "/")
 
@@ -495,8 +591,34 @@ func RequirementsId(text string) (int, error) {
 	return ret, nil
 }
 
-func ChangeActivitiesStatus(url string) {
-	fmt.Println(url)
+func RetProjectIdCustomField(text string) (int, error) {
 
-	RequirementsId(url)
+	textSplit := strings.Split(text, "/")
+
+	if !slices.Contains(textSplit, "projects") {
+		return 0, errors.New("Error RetProjectIdCustomField don't have projects")
+	}
+
+	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
+
+	if error != nil {
+		return 0, errors.New("Error RetProjectIdCustomField Not Integer")
+	}
+
+	return ret, nil
+}
+
+func UpdateActivityRequirement(task TypeClickup.TaskResponse, project TypePlatform.Project) error {
+	if project.Id != "" {
+		activityId, error := RetActivityIdCustomField(task.CustomField.LinkConvisoPlatform)
+
+		if error == nil {
+			idxActivity := slices.IndexFunc(project.Activities, func(a TypePlatform.ActivityCollectionResponse) bool { return a.Id == strconv.Itoa(activityId) })
+			fmt.Println("activity ", project.Activities[idxActivity])
+		} else {
+			return error
+		}
+	}
+
+	return nil
 }

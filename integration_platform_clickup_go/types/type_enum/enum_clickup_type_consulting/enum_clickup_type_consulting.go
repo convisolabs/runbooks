@@ -1,4 +1,4 @@
-package TypeEnumClickupTypeConsulting
+package enum_clickup_type_consulting
 
 const (
 	EPIC  int = 0

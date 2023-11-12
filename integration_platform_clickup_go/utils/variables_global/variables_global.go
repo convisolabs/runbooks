@@ -1,4 +1,4 @@
-package VariablesGlobal
+package variables_global
 
 import (
 	TypeIntegration "integration.platform.clickup/types/type_integration"
