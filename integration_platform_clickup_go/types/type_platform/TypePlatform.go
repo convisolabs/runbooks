@@ -144,3 +144,11 @@ type ProjectResponse struct {
 type ProjectDataResponse struct {
 	Project Project `json:"project"`
 }
+
+type UpdateRequirementsActivityStatusRequest struct {
+	Input UpdateRequirementsActivityStatusInputRequest `json:"input"`
+}
+
+type UpdateRequirementsActivityStatusInputRequest struct {
+	ActivityId int `json:"activityId"`
+}
