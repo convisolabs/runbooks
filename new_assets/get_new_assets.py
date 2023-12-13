@@ -1,33 +1,37 @@
 from bs4 import BeautifulSoup
 import re
 import requests
+import os
 
-scope_id = 11 
+scope_id = 430
 cookie = ""
 url = 'https://app.conviso.com.br/scopes/{scope_id}/integrations/fortify/select_projects?page={{page_number}}'.format(scope_id=scope_id)
-headers = {
-  "accept": "*/*;q=0.5, text/javascript, application/javascript, application/ecmascript, application/x-ecmascript",
-    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "if-none-match": "W/\"de422fb04ff7bbf12eaa311b3ab29048\"",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    "x-csrf-token": "Z7PHbAZLfhkxir+R7J38fRhuFWOocgNa0GzMsRqAoXZ73cfauhWelNAVHsa+1JWh0DsWYLlfypIIxy0RdFMCog==",
-    "x-requested-with": "XMLHttpRequest",
-    "cookie": cookie,
-    "Referer": "https://app.conviso.com.br/scopes/{}/integrations/fortify/select_projects?locale=en".format(scope_id),
-    "Referrer-Policy": "strict-origin-when-cross-origin"
-}
+CONVISO_PLATFORM_TOKEN = os.environ.get('CONVISO_PLATFORM_TOKEN','token')
+CONVISO_PLATFORM_HEADERS = {'X-Armature-Api-Key':CONVISO_PLATFORM_TOKEN}
+
+# headers = {
+#   "accept": "*/*;q=0.5, text/javascript, application/javascript, application/ecmascript, application/x-ecmascript",
+#     "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "if-none-match": "W/\"de422fb04ff7bbf12eaa311b3ab29048\"",
+#     "sec-fetch-dest": "empty",
+#     "sec-fetch-mode": "cors",
+#     "sec-fetch-site": "same-origin",
+#     "sec-gpc": "1",
+#     "x-csrf-token": "Z7PHbAZLfhkxir+R7J38fRhuFWOocgNa0GzMsRqAoXZ73cfauhWelNAVHsa+1JWh0DsWYLlfypIIxy0RdFMCog==",
+#     "x-requested-with": "XMLHttpRequest",
+#     "cookie": cookie,
+#     "Referer": "https://app.conviso.com.br/scopes/{}/integrations/fortify/select_projects?locale=en".format(scope_id),
+#     "Referrer-Policy": "strict-origin-when-cross-origin"
+# }
 
 new_assets = []
 
 # remove jquery structures
 def format_soup(data):
   # regex: ^\$\(\'\#projects\'\).html\(\".*\);$
-  lfilter, rfilter = ("$('#projects').html(\"\\n", ");")
-  formated_data = (data[data.index(lfilter)+len(lfilter):data.index(rfilter)]).replace('\\"', '"').replace("\\/", "/")
-  return BeautifulSoup(formated_data, "html.parser")
+  #lfilter, rfilter = ("$('#projects').html(\"\\n", ");")
+  #formated_data = (data[data.index(lfilter)+len(lfilter):data.index(rfilter)]).replace('\\"', '"').replace("\\/", "/")
+  return BeautifulSoup(data, "html.parser")
   
 def get_project_name(div_str):
   return re.search("(.*)Project: ([a-zA-Z0-9\-\_ ]*)", div_str).group(2).strip()
@@ -45,7 +49,7 @@ def get_new_assets(data):
 
 def get_page(page_number):
   f_url = url.format(page_number=page_number)
-  response = requests.get(f_url, headers=headers)
+  response = requests.get(f_url, headers=CONVISO_PLATFORM_HEADERS)
   return response.text, response.status_code
 
 def dump_to_file():

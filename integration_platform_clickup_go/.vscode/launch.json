@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
             "console": "externalTerminal",
-            "args": ["-sr", "journey"]
+            "args": ["-iu", "journey"]
         }
 
     ]
