@@ -1,5 +1,9 @@
-- integrationname: TesteProjetosConsulting
-  clickupcustomerlist: Autotrac
-  clickuplistid: 900701540171
-  platformid: 553
-  hasStore: true
+configGeneral:
+  integrationdefault: 0
+configclickUp:
+  user: 0
+integrations:
+  - integrationname: 0
+    clickupcustomerlist: 0
+    clickuplistid: 0
+    platformid: 0

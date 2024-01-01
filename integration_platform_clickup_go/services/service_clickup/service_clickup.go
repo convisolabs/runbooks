@@ -168,10 +168,7 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
-
-	if variables_global.Customer.HasStore {
-		urlGetTasks.WriteString("&subtasks=true")
-	}
+	urlGetTasks.WriteString("&subtasks=true")
 
 	time.Sleep(time.Second)
 
@@ -238,9 +235,7 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	urlGetTask.WriteString("task/")
 	urlGetTask.WriteString(taskId)
 
-	if variables_global.Customer.HasStore {
-		urlGetTask.WriteString("?include_subtasks=true")
-	}
+	urlGetTask.WriteString("?include_subtasks=true")
 
 	time.Sleep(time.Second)
 
@@ -269,6 +264,40 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
 
 	return task, nil
+}
+
+func ReturnList(listId string) (type_clickup.ListResponse, error) {
+	var list type_clickup.ListResponse
+	var urlGetList bytes.Buffer
+	urlGetList.WriteString(variables_constant.CLICKUP_API_URL_BASE)
+	urlGetList.WriteString("list/")
+	urlGetList.WriteString(listId)
+
+	urlGetList.WriteString("?include_subtasks=true")
+
+	time.Sleep(time.Second)
+
+	req, err := http.NewRequest(http.MethodGet, urlGetList.String(), nil)
+	if err != nil {
+		return list, errors.New("Error ReturnList request: " + err.Error())
+	}
+
+	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+
+	if resp.StatusCode != 200 {
+		return list, errors.New("Error ReturnList StatusCode: " + http.StatusText(resp.StatusCode))
+	}
+
+	if err != nil {
+		return list, errors.New("Error ReturnList response: " + err.Error())
+	}
+	data, _ := io.ReadAll(resp.Body)
+
+	json.Unmarshal([]byte(string(data)), &list)
+
+	return list, nil
 }
 
 func RetNewStatus(statusTask string, statusSubTask string) (string, bool) {
@@ -326,7 +355,7 @@ func RequestPutTask(taskId string, request type_clickup.TaskRequest) error {
 		return errors.New("Error RequestPutTask response: " + err.Error())
 	}
 
-	ioutil.ReadAll(resp.Body)
+	io.ReadAll(resp.Body)
 
 	return nil
 }
@@ -399,7 +428,7 @@ func RequestTaskTimeSpent(teamId string, request type_clickup.TaskTimeSpentReque
 		return errors.New("Error RequestTaskTimeSpent response: " + err.Error())
 	}
 
-	ioutil.ReadAll(resp.Body)
+	io.ReadAll(resp.Body)
 
 	return nil
 }
@@ -437,7 +466,7 @@ func TaskCreateRequest(request type_clickup.TaskCreateRequest) (type_clickup.Tas
 		return result, errors.New("Error TaskCreateRequest ClientDo: " + err.Error())
 	}
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &result)
 

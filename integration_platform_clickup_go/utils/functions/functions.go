@@ -3,7 +3,7 @@ package functions
 import (
 	"bufio"
 	"fmt"
-	"integration_platform_clickup_go/types/type_integration"
+	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/utils/variables_global"
 	"os"
 	"strconv"
@@ -12,29 +12,30 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func LoadCustomerByYamlFile() []type_integration.CustomerType {
+func LoadConfigsByYamlFile() type_config.ConfigType {
+
+	// Create a struct to hold the YAML data
+	var config type_config.ConfigType
+
 	// Read the file
 	data, err := os.ReadFile("projects.yaml")
 
 	if err != nil {
-		fmt.Println("Error ReadFile LoadYamlFileProjects: ", err.Error())
-		return nil
+		fmt.Println("Error ReadFile LoadConfigsByYamlFile: ", err.Error())
+		return config
 	}
-
-	// Create a struct to hold the YAML data
-	var projects []type_integration.CustomerType
 
 	// Unmarshal the YAML data into the struct
-	err = yaml.Unmarshal(data, &projects)
+	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		fmt.Println("Error DataToStruct LoadYamlFileProjects: ", err.Error())
-		return nil
+		fmt.Println("Error DataToStruct LoadConfigsByYamlFile: ", err.Error())
+		return config
 	}
 
-	return projects
+	return config
 }
 
-func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []type_integration.CustomerType) (result bool) {
+func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []type_config.ConfigTypeIntegration) (result bool) {
 	result = false
 	for _, customer := range customers {
 		if customer.ClickUpListId == clickUpListId {
