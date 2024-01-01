@@ -1,5 +1,7 @@
 package variables_constant
 
+const VERSION = "1.0.0"
+
 const CLICKUP_CUSTOMER_FIELD_ID = "4493a404-3ef7-4d7a-91e4-830ebc666353"
 
 const CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID = "8e2863f4-e11f-409c-a373-893bc12200fb"

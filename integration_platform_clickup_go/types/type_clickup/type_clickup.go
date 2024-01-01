@@ -74,6 +74,7 @@ type TaskCreateRequest struct {
 	Parent      string               `json:"parent,omitempty"`
 	LinksTo     string               `json:"links_to,omitempty"`
 	CustomField []CustomFieldRequest `json:"custom_fields"`
+	Assignees   []int64              `json:"assignees"`
 }
 
 type CustomFieldRequest struct {
