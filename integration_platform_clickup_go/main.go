@@ -13,6 +13,7 @@ import (
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -356,6 +357,9 @@ func MainMenu() {
 
 	for ok := true; ok; ok = (input != 0) {
 		fmt.Println("-----Main Menu-----")
+		fmt.Println("App Version: ", variables_constant.VERSION)
+		fmt.Println("SO: ", runtime.GOOS)
+		fmt.Println("Arch: ", runtime.GOARCH)
 		fmt.Println("Project Selected: ", variables_global.Customer.IntegrationName)
 		fmt.Println("0 - Exit")
 		fmt.Println("1 - Menu Setup")
@@ -394,14 +398,14 @@ func CreateProject() {
 	typeId := 10
 	SubTaskReqActivies := "n"
 
-	fmt.Print("Label: ")
-	label := functions.GetTextWithSpace()
+	//fmt.Print("Label: ")
+	label := functions.GetTextWithSpace("Label: ")
 
-	fmt.Print("Goal: ")
-	goal := functions.GetTextWithSpace()
+	//fmt.Print("Goal: ")
+	goal := functions.GetTextWithSpace("Goal: ")
 
-	fmt.Print("Scope: ")
-	scope := functions.GetTextWithSpace()
+	//fmt.Print("Scope: ")
+	scope := functions.GetTextWithSpace("Scope: ")
 
 	fmt.Print("TypeId (Consulting = 10): ")
 	n, err := fmt.Scan(&typeId)
@@ -442,16 +446,16 @@ func CreateProject() {
 		return
 	}
 
-	CustomFieldCustomerPosition, err := service_clickup.RetCustomerPosition()
-	if err != nil {
-		fmt.Println("Error CreateProject: CustomerCustomField error...")
-		CustomFieldCustomerPosition = ""
-	}
+	// CustomFieldCustomerPosition, err := service_clickup.RetCustomerPosition()
+	// if err != nil {
+	// 	fmt.Println("Error CreateProject: CustomerCustomField error...")
+	// 	CustomFieldCustomerPosition = ""
+	// }
 
-	customFieldCustomer := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_CUSTOMER_FIELD_ID,
-		CustomFieldCustomerPosition,
-	}
+	// customFieldCustomer := type_clickup.CustomFieldRequest{
+	// 	variables_constant.CLICKUP_CUSTOMER_FIELD_ID,
+	// 	CustomFieldCustomerPosition,
+	// }
 
 	customFieldUrlConvisoPlatform := type_clickup.CustomFieldRequest{
 		variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID,
@@ -466,7 +470,7 @@ func CreateProject() {
 	customFieldsMainTask := []type_clickup.CustomFieldRequest{
 		customFieldUrlConvisoPlatform,
 		customFieldTypeConsulting,
-		customFieldCustomer,
+		//customFieldCustomer,
 	}
 
 	assignessTask := []int64{variables_global.Config.ConfclickUp.User}
@@ -514,7 +518,8 @@ func CreateProject() {
 			customFieldsSubTask := []type_clickup.CustomFieldRequest{
 				customFieldUrlConvisoPlatformSubTask,
 				customFieldTypeConsultingSubTask,
-				customFieldCustomer}
+				// customFieldCustomer,
+			}
 
 			sanitizedHTMLTitle := ""
 			sanitizedHTMLDescription := ""

@@ -6,6 +6,7 @@ import (
 	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/utils/variables_global"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -65,11 +66,32 @@ func ConvertStringToArrayInt(var1 string) []int {
 	return arrayRet
 }
 
-func GetTextWithSpace() string {
-	ret := ""
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		ret = scanner.Text()
+// func GetTextWithSpace() string {
+// 	ret := ""
+// 	scanner := bufio.NewScanner(os.Stdin)
+// 	if scanner.Scan() {
+// 		ret = scanner.Text()
+// 	}
+// 	return ret
+// }
+
+func GetTextWithSpace(label string) string {
+
+	EOL := byte('\r')
+
+	if strings.ToLower(runtime.GOOS) == "linux" {
+		EOL = byte('\n')
 	}
-	return ret
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(label)
+
+	ret, error := reader.ReadString(EOL)
+
+	if error != nil {
+		fmt.Print("Error function GetTextWithSpace ", error)
+		return ""
+	}
+
+	return strings.TrimSuffix(ret, string(EOL))
 }
