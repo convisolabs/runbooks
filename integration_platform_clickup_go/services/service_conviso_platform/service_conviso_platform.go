@@ -464,14 +464,14 @@ func SearchProjectTypesPlatform(tpSearch string) {
 }
 
 func InputSearchProjectTypesPlatform() {
-	fmt.Print("Enter part of the project type: ")
-	tpSearch := functions.GetTextWithSpace()
+	//fmt.Print("Enter part of the project type: ")
+	tpSearch := functions.GetTextWithSpace("Enter part of the project type: ")
 	SearchProjectTypesPlatform(tpSearch)
 }
 
 func InputSearchRequimentsPlatform() {
-	fmt.Print("Enter part of the requirement: ")
-	reqSearch := functions.GetTextWithSpace()
+	//fmt.Print("Enter part of the requirement: ")
+	reqSearch := functions.GetTextWithSpace("Enter part of the requirement: ")
 	SearchRequimentsPlatform(reqSearch)
 }
 

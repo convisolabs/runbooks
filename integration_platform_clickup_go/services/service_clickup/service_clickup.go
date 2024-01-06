@@ -27,29 +27,29 @@ func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	return ret
 }
 
-func RetCustomerPosition() (string, error) {
-	result := ""
-	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+// func RetCustomerPosition() (string, error) {
+// 	result := ""
+// 	customFieldsResponse, err := RetCustomFieldCustomerPosition()
 
-	if err != nil {
-		return result, errors.New("Error RetCustomerPosition RequestCustomField: " + err.Error())
-	}
+// 	if err != nil {
+// 		return result, errors.New("Error RetCustomerPosition RequestCustomField: " + err.Error())
+// 	}
 
-	found := false
-	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+// 	found := false
+// 	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
 
-		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_CUSTOMER_FIELD_ID {
-			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(variables_global.Customer.ClickUpCustomerList) {
-					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
-					found = true
-					break
-				}
-			}
-		}
-	}
-	return result, nil
-}
+// 		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_CUSTOMER_FIELD_ID {
+// 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+// 				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(variables_global.Customer.ClickUpCustomerList) {
+// 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
+// 					found = true
+// 					break
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return result, nil
+// }
 
 func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
