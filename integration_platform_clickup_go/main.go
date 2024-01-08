@@ -394,7 +394,7 @@ func MainMenu() {
 }
 
 func CreateProject() {
-	playbookIds := ""
+	requirementIds := ""
 	typeId := 10
 	SubTaskReqActivies := "n"
 
@@ -414,8 +414,8 @@ func CreateProject() {
 		return
 	}
 
-	fmt.Print("Playbook (1;2;3): ")
-	n, err = fmt.Scan(&playbookIds)
+	fmt.Print("Requirement ID (1;2;3): ")
+	n, err = fmt.Scan(&requirementIds)
 	if n < 1 || err != nil {
 		fmt.Println("Invalid Input")
 		return
@@ -430,7 +430,7 @@ func CreateProject() {
 
 	createConvisoPlatform := type_platform.ProjectCreateInputRequest{variables_global.Customer.PlatformID,
 		label, goal, scope, typeId,
-		functions.ConvertStringToArrayInt(playbookIds),
+		functions.ConvertStringToArrayInt(requirementIds),
 		time.Now().Add(time.Hour * 24).Format("2006-01-02"), "1"}
 
 	err = service_conviso_platform.AddPlatformProject(createConvisoPlatform)

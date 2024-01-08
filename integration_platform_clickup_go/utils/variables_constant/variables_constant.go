@@ -1,6 +1,6 @@
 package variables_constant
 
-const VERSION = "1.0.1"
+const VERSION = "1.0.2"
 
 // const CLICKUP_CUSTOMER_FIELD_ID = "4493a404-3ef7-4d7a-91e4-830ebc666353"
 
@@ -15,6 +15,8 @@ const CLICKUP_TYPE_CONSULTING_FIELD_ID = "addf1ada-84b4-494c-b640-45d0bb698181"
 const CLICKUP_FOLDER_CONSULTING_ID = "114948796"
 
 const CLICKUP_API_URL_BASE = "https://api.clickup.com/api/v2/"
+
+const CLICKUP_TOKEN_NAME = "CLICKUP_TOKEN"
 
 const CONVISO_PLATFORM_API_GRAPHQL = "https://app.convisoappsec.com/graphql"
 
