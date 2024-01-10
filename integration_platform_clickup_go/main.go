@@ -32,7 +32,7 @@ ____  _       _    __                       ____ _ _      _    _   _
 `
 
 func LoadProjects() {
-	config := functions.LoadConfigsByYamlFile()
+	config := variables_global.Config
 
 	fmt.Println("------Projets------")
 	// Print the data
@@ -547,14 +547,47 @@ func CreateProject() {
 	fmt.Println("Create Task Success!")
 }
 
+func InitialCheck() bool {
+	ret := true
+
+	err := error(nil)
+
+	variables_global.Config, err = functions.LoadConfigsByYamlFile()
+
+	if err != nil {
+		fmt.Println("YAML File Problem", variables_constant.CLICKUP_TOKEN_NAME, " is empty!")
+		ret = false
+	}
+
+	if os.Getenv(variables_constant.CLICKUP_TOKEN_NAME) == "" {
+		fmt.Println("Variable ", variables_constant.CLICKUP_TOKEN_NAME, " is empty!")
+		ret = false
+	}
+
+	if os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME) == "" {
+		fmt.Println("Variable ", variables_constant.CONVISO_PLATFORM_TOKEN_NAME, " is empty!")
+		ret = false
+	}
+
+	return ret
+}
+
 func main() {
+
+	if !InitialCheck() {
+		fmt.Println("You need to correct the above information before rerunning the application")
+		fmt.Println("Press the Enter Key to finish!")
+		fmt.Scanln()
+		os.Exit(0)
+	}
+
+	// fmt.Println(variables_constant.CLICKUP_TOKEN_NAME + " " + os.Getenv(variables_constant.CLICKUP_TOKEN_NAME))
+	// fmt.Println(variables_constant.CONVISO_PLATFORM_TOKEN_NAME + " " + os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME))
 
 	integrationJustVerify := flag.Bool("iv", false, "Verify if clickup tasks is ok")
 	integrationUpdateTasks := flag.Bool("iu", false, "Update Conviso Platform and ClickUp Tasks")
 	deploy := flag.Bool("d", false, "See info about deploys")
 	version := flag.Bool("v", false, "Script Version")
-
-	variables_global.Config = functions.LoadConfigsByYamlFile()
 
 	if variables_global.Config.ConfigGeneral.IntegrationDefault != -1 {
 		variables_global.Customer = variables_global.Config.Integrations[variables_global.Config.ConfigGeneral.IntegrationDefault]

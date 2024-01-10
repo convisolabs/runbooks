@@ -1,6 +1,6 @@
 package variables_constant
 
-const VERSION = "1.0.2"
+const VERSION = "1.0.3"
 
 // const CLICKUP_CUSTOMER_FIELD_ID = "4493a404-3ef7-4d7a-91e4-830ebc666353"
 
