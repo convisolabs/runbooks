@@ -381,11 +381,13 @@ func SearchRequimentsPlatform(reqSearch string) {
 		client := &http.Client{Timeout: time.Second * 10}
 		resp, err := client.Do(req)
 		defer req.Body.Close()
+
 		if err != nil {
 			fmt.Println("Error SearchRequimentsPlatform ClientDo: ", err.Error())
 			return
 		}
-		data, _ := ioutil.ReadAll(resp.Body)
+
+		data, _ := io.ReadAll(resp.Body)
 
 		json.Unmarshal([]byte(string(data)), &result)
 

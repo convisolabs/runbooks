@@ -2,6 +2,7 @@ package functions
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/utils/variables_global"
@@ -13,7 +14,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func LoadConfigsByYamlFile() type_config.ConfigType {
+func LoadConfigsByYamlFile() (type_config.ConfigType, error) {
 
 	// Create a struct to hold the YAML data
 	var config type_config.ConfigType
@@ -22,18 +23,16 @@ func LoadConfigsByYamlFile() type_config.ConfigType {
 	data, err := os.ReadFile("projects.yaml")
 
 	if err != nil {
-		fmt.Println("Error ReadFile LoadConfigsByYamlFile: ", err.Error())
-		return config
+		return config, errors.New("Error ReadFile " + err.Error())
 	}
 
 	// Unmarshal the YAML data into the struct
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		fmt.Println("Error DataToStruct LoadConfigsByYamlFile: ", err.Error())
-		return config
+		return config, errors.New("Error DataToStruct " + err.Error())
 	}
 
-	return config
+	return config, nil
 }
 
 func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []type_config.ConfigTypeIntegration) (result bool) {
@@ -76,6 +75,7 @@ func ConvertStringToArrayInt(var1 string) []int {
 // }
 
 func GetTextWithSpace(label string) string {
+	ret := ""
 
 	EOL := byte('\r')
 
@@ -90,8 +90,11 @@ func GetTextWithSpace(label string) string {
 
 	if error != nil {
 		fmt.Print("Error function GetTextWithSpace ", error)
-		return ""
+		return ret
 	}
 
-	return strings.TrimSuffix(ret, string(EOL))
+	ret = strings.Replace(ret, "\r", "", -1)
+	ret = strings.Replace(ret, "\n", "", -1)
+
+	return ret
 }
