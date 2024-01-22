@@ -8,7 +8,8 @@ type ConfigTypeIntegration struct {
 }
 
 type ConfigTypeClickup struct {
-	User int64 `yaml:"user"`
+	User        int64 `yaml:"user"`
+	HttpAttempt *int  `yaml:"httpattempt",omitempty`
 }
 
 type ConfigTypeGeneral struct {

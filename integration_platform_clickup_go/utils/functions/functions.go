@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/utils/variables_global"
+	"io"
+	"net/http"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -65,15 +68,6 @@ func ConvertStringToArrayInt(var1 string) []int {
 	return arrayRet
 }
 
-// func GetTextWithSpace() string {
-// 	ret := ""
-// 	scanner := bufio.NewScanner(os.Stdin)
-// 	if scanner.Scan() {
-// 		ret = scanner.Text()
-// 	}
-// 	return ret
-// }
-
 func GetTextWithSpace(label string) string {
 	ret := ""
 
@@ -97,4 +91,40 @@ func GetTextWithSpace(label string) string {
 	ret = strings.Replace(ret, "\n", "", -1)
 
 	return ret
+}
+
+func HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error) {
+	req, err := http.NewRequest(httpMethod, httpUrl, payload)
+
+	msgError := ""
+
+	if err != nil {
+		return nil, errors.New("Error HttpRequestRetry Request: " + err.Error())
+	}
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	aux := 1
+	for ok := true; ok; ok = (attempt + 1) > aux {
+		aux = aux + 1
+
+		client := &http.Client{Timeout: time.Second * 10}
+		resp, err := client.Do(req)
+
+		if err != nil {
+			return resp, errors.New("Error HttpRequestRetry ClientDo: " + err.Error())
+		}
+
+		if resp.StatusCode != 200 {
+			time.Sleep(time.Second)
+			msgError = msgError + "Retry (" + string(aux) + "): " + http.StatusText(resp.StatusCode) + " "
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, errors.New("Error HttpRequestRetry Final: " + msgError)
 }

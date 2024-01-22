@@ -6,16 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var globalClickupHeaders map[string]string
+
+func init() {
+	globalClickupHeaders = map[string]string{
+		"Authorization": os.Getenv(variables_constant.CLICKUP_TOKEN_NAME),
+	}
+}
 
 func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	ret := ""
@@ -85,23 +93,14 @@ func RetCustomFieldCustomerPosition() (type_clickup.CustomFieldsResponse, error)
 	urlGetTasks.WriteString(variables_global.Customer.ClickUpListId)
 	urlGetTasks.WriteString("/field")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-	if err != nil {
-		return result, errors.New("Error RetCustomerPosition NewRequest: " + err.Error())
-	}
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	if resp.StatusCode != 200 {
-		return result, errors.New("Error RetCustomerPosition StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return result, errors.New("Error RetCustomerPosition ClientDo: " + err.Error())
+		return result, errors.New("Error RetCustomerPosition: " + err.Error())
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+
+	data, _ := io.ReadAll(response.Body)
+
 	json.Unmarshal([]byte(string(data)), &result)
 
 	return result, nil
@@ -153,7 +152,7 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	var resultTasks type_clickup.TasksResponse
 	var urlGetTasks bytes.Buffer
 
-	teste := strconv.FormatInt(int64(taskType), 10)
+	intTaskType := strconv.FormatInt(int64(taskType), 10)
 
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
@@ -162,7 +161,7 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	urlGetTasks.WriteString("{\"field_id\":\"")
 	urlGetTasks.WriteString(variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID)
 	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
-	urlGetTasks.WriteString(teste)
+	urlGetTasks.WriteString(intTaskType)
 	urlGetTasks.WriteString("\"}")
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
@@ -170,26 +169,16 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
 	urlGetTasks.WriteString("&subtasks=true")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-	if err != nil {
-		return resultTasks, errors.New("Error ReturnTasks request: " + err.Error())
-	}
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return resultTasks, errors.New("Error ReturnTasks StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return resultTasks, errors.New("Error ReturnTasks response: " + err.Error())
+		return resultTasks, errors.New("Error ReturnTasks: " + err.Error())
 	}
 
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(response.Body)
+
 	json.Unmarshal([]byte(string(data)), &resultTasks)
+
 	return resultTasks, nil
 }
 
@@ -202,26 +191,12 @@ func ReturnLists() (type_clickup.ListsResponse, error) {
 	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
 	urlGetLists.WriteString("/list?archived=false")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetLists.String(), nil)
+	request, err := functions.HttpRequestRetry(http.MethodGet, urlGetLists.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 	if err != nil {
-		return result, errors.New("Error ReturnLists request: " + err.Error())
+		return result, errors.New("Error ReturnLists: " + err.Error())
 	}
 
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return result, errors.New("Error ReturnLists StatusCode: " + http.StatusText(resp.StatusCode))
-	}
-
-	if err != nil {
-		return result, errors.New("Error ReturnLists response: " + err.Error())
-	}
-
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(request.Body)
 
 	json.Unmarshal([]byte(string(data)), &result)
 
@@ -234,28 +209,14 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	urlGetTask.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTask.WriteString("task/")
 	urlGetTask.WriteString(taskId)
-
 	urlGetTask.WriteString("?include_subtasks=true")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTask.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 	if err != nil {
-		return task, errors.New("Error ReturnTask request: " + err.Error())
+		return task, errors.New("Error ReturnTask: " + err.Error())
 	}
 
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return task, errors.New("Error ReturnTask StatusCode: " + http.StatusText(resp.StatusCode))
-	}
-
-	if err != nil {
-		return task, errors.New("Error ReturnTask response: " + err.Error())
-	}
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(response.Body)
 
 	json.Unmarshal([]byte(string(data)), &task)
 
@@ -272,28 +233,15 @@ func ReturnList(listId string) (type_clickup.ListResponse, error) {
 	urlGetList.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetList.WriteString("list/")
 	urlGetList.WriteString(listId)
-
 	urlGetList.WriteString("?include_subtasks=true")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetList.String(), nil)
-	if err != nil {
-		return list, errors.New("Error ReturnList request: " + err.Error())
-	}
-
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return list, errors.New("Error ReturnList StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetList.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return list, errors.New("Error ReturnList response: " + err.Error())
+		return list, errors.New("Error ReturnList: " + err.Error())
 	}
-	data, _ := io.ReadAll(resp.Body)
+
+	data, _ := io.ReadAll(response.Body)
 
 	json.Unmarshal([]byte(string(data)), &list)
 

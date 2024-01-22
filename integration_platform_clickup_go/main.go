@@ -96,31 +96,36 @@ func VerifyTasks(list type_clickup.ListResponse) {
 			return
 		}
 
-		if task.Parent == "" {
-			fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ",
-				strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
-				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
-			continue
-		}
+		if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "closed" {
 
-		if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "canceled" && strings.ToLower(task.Status.Status) != "blocked" {
+			if task.Parent == "" {
+				fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
+					" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+				continue
+			}
+
 			if task.DueDate == "" {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "DueDate empty", " :: ", task.Url,
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
 
 			if task.StartDate == "" {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "StartDate empty", " :: ", task.Url,
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
 
 			if task.TimeEstimate == 0 {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "TimeEstimate empty", " :: ", task.Url,
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
 
 			if task.Status.Status == "done" && task.TimeSpent == 0 {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ", "TimeSpent empty", " :: ", task.Url,
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
 		}
@@ -300,6 +305,7 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 	for i := 0; i < len(variables_global.Config.Integrations); i++ {
 
 		fmt.Println("Found List ", variables_global.Config.Integrations[i].IntegrationName)
+		fmt.Println("Begin: ", time.Now().Format("2006-01-02 15:04:05"))
 
 		list, error := service_clickup.ReturnList(variables_global.Config.Integrations[i].ClickUpListId)
 
@@ -319,6 +325,7 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 			UpdateProjectWithStore(list)
 			//return
 		}
+		fmt.Println("Finish: ", time.Now().Format("2006-01-02 15:04:05"))
 	}
 
 	fmt.Println("...Finishing ClickUp Automation...")
@@ -572,6 +579,13 @@ func InitialCheck() bool {
 	return ret
 }
 
+func SetDefaultValue() {
+	if variables_global.Config.ConfclickUp.HttpAttempt == nil {
+		httpAttempt := 3
+		variables_global.Config.ConfclickUp.HttpAttempt = &httpAttempt
+	}
+}
+
 func main() {
 
 	if !InitialCheck() {
@@ -580,6 +594,10 @@ func main() {
 		fmt.Scanln()
 		os.Exit(0)
 	}
+
+	SetDefaultValue()
+
+	//service_clickup.RetCustomFieldCustomerPosition()
 
 	// fmt.Println(variables_constant.CLICKUP_TOKEN_NAME + " " + os.Getenv(variables_constant.CLICKUP_TOKEN_NAME))
 	// fmt.Println(variables_constant.CONVISO_PLATFORM_TOKEN_NAME + " " + os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME))
