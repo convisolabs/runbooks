@@ -59,6 +59,30 @@ func RetAssigness(assignees []type_clickup.AssigneeField) string {
 // 	return result, nil
 // }
 
+func RetTeamPosition(team string) (string, error) {
+	result := ""
+	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+
+	if err != nil {
+		return result, errors.New("Error RetTimePosition RequestCustomField: " + err.Error())
+	}
+
+	found := false
+	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+
+		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_TEAM_FIELD_ID {
+			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == team {
+					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
+					found = true
+					break
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
 func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
 		if customFields[i].Id == variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
@@ -419,4 +443,20 @@ func TaskCreateRequest(request type_clickup.TaskCreateRequest) (type_clickup.Tas
 	json.Unmarshal([]byte(string(data)), &result)
 
 	return result, nil
+}
+
+func CheckTags(tags []type_clickup.TagResponse, value string) bool {
+	ret := false
+
+	vetValue := strings.Split(value, ";")
+
+	for i := 0; i < len(tags); i++ {
+		for j := 0; j < len(vetValue); j++ {
+			if strings.ToLower(tags[i].Name) == strings.ToLower(vetValue[j]) {
+				return true
+			}
+		}
+	}
+
+	return ret
 }

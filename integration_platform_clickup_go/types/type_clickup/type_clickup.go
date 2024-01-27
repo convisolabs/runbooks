@@ -1,5 +1,9 @@
 package type_clickup
 
+type TagResponse struct {
+	Name string `json:"name"`
+}
+
 type ListResponse struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
@@ -40,6 +44,7 @@ type TaskResponse struct {
 	Url          string             `json:"url"`
 	Parent       string             `json:"parent"`
 	Assignees    []AssigneeField    `json:"assignees"`
+	Tags         []TagResponse      `json:"tags"`
 	CustomField  CustomFieldCustomized
 }
 
@@ -90,8 +95,7 @@ type CustomField struct {
 	Id         string                `json:"id"`
 	Name       string                `json:"name"`
 	TypeConfig CustomFieldTypeConfig `json:"type_config"`
-	//ValueString string                `json:"value"`
-	Value interface{} `json:"value"`
+	Value      interface{}           `json:"value"`
 }
 
 type AssigneeField struct {
