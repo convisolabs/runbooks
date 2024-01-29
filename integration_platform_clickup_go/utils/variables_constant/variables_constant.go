@@ -16,7 +16,7 @@ const CLICKUP_TOKEN_NAME = "CLICKUP_TOKEN"
 
 const CLICKUP_TEAM_NAME = "consulting"
 
-const CLICKUP_TEAM_ID = "c1242935-3e22-47ea-bd02-2b82ed541ac3"
+const CLICKUP_TEAM_ID_CONSULTING = "c1242935-3e22-47ea-bd02-2b82ed541ac3"
 
 const CONVISO_PLATFORM_API_GRAPHQL = "https://app.convisoappsec.com/graphql"
 

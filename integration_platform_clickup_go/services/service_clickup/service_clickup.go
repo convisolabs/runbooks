@@ -109,6 +109,24 @@ func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	return 0
 }
 
+func RetCustomFieldTeam(customFields []type_clickup.CustomField) []string {
+	for i := 0; i < len(customFields); i++ {
+		if customFields[i].Id == variables_constant.CLICKUP_TEAM_FIELD_ID {
+			if customFields[i].Value == nil {
+				return []string{}
+			} else {
+				aInterface := customFields[i].Value.([]interface{})
+				aString := make([]string, len(aInterface))
+				for i, v := range aInterface {
+					aString[i] = v.(string)
+				}
+				return aString
+			}
+		}
+	}
+	return []string{}
+}
+
 func RetCustomFieldCustomerPosition() (type_clickup.CustomFieldsResponse, error) {
 	var result type_clickup.CustomFieldsResponse
 	var urlGetTasks bytes.Buffer
@@ -247,6 +265,7 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	//add customFields
 	task.CustomField.TypeConsulting = RetCustomFieldTypeConsulting(task.CustomFields)
 	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
+	task.CustomField.Team = RetCustomFieldTeam(task.CustomFields)
 
 	return task, nil
 }

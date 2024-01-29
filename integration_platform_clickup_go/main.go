@@ -128,6 +128,12 @@ func VerifyTasks(list type_clickup.ListResponse) {
 					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
+
+			if len(task.CustomField.Team) == 0 || !slices.Contains(task.CustomField.Team, variables_constant.CLICKUP_TEAM_ID_CONSULTING) {
+				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
+					" :: ", service_clickup.RetAssigness(task.Assignees))
+			}
 		}
 	}
 }
@@ -156,6 +162,12 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 				" :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ", strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
 				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
 			continue
+		}
+
+		if len(task.CustomField.Team) == 0 || slices.Contains(task.CustomField.Team, variables_constant.CLICKUP_TEAM_ID_CONSULTING) {
+			fmt.Println("EPIC or Story without TEAM: ", list.Name, " - ", task.Name, " - ",
+				strings.ToLower(task.Status.Status), " :: ", task.Url,
+				" :: ", service_clickup.RetAssigness(task.Assignees))
 		}
 
 		if customFieldTypeConsulting == int(enum_clickup_type_consulting.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
@@ -449,17 +461,6 @@ func CreateProject() {
 		return
 	}
 
-	// CustomFieldTeamPosition, err := service_clickup.RetTeamPosition(variables_constant.CLICKUP_TEAM_NAME)
-	// if err != nil {
-	// 	fmt.Println("Error CreateProject: CustomFieldTeamPosition error...")
-	// 	CustomFieldTeamPosition = ""
-	// }
-
-	// customFieldTeam := type_clickup.CustomFieldRequest{
-	// 	variables_constant.CLICKUP_TEAM_FIELD_ID,
-	// 	variables_constant.CLICKUP_TEAM_ID,
-	// }
-
 	createConvisoPlatform := type_platform.ProjectCreateInputRequest{variables_global.Customer.PlatformID,
 		label, goal, scope, typeId,
 		functions.ConvertStringToArrayInt(requirementIds),
@@ -488,10 +489,15 @@ func CreateProject() {
 		strconv.Itoa(enum_clickup_type_consulting.STORE),
 	}
 
+	customFieldTeam := type_clickup.CustomFieldRequest{
+		variables_constant.CLICKUP_TEAM_FIELD_ID,
+		[1]string{variables_constant.CLICKUP_TEAM_ID_CONSULTING},
+	}
+
 	customFieldsMainTask := []type_clickup.CustomFieldRequest{
 		customFieldUrlConvisoPlatform,
 		customFieldTypeConsulting,
-		//		customFieldTeam,
+		customFieldTeam,
 	}
 
 	assignessTask := []int64{variables_global.Config.ConfclickUp.User}
@@ -539,7 +545,7 @@ func CreateProject() {
 			customFieldsSubTask := []type_clickup.CustomFieldRequest{
 				customFieldUrlConvisoPlatformSubTask,
 				customFieldTypeConsultingSubTask,
-				// customFieldCustomer,
+				customFieldTeam,
 			}
 
 			sanitizedHTMLTitle := ""

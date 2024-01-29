@@ -26,6 +26,7 @@ type CustomFieldCustomized struct {
 	TypeConsulting      int
 	Customer            string
 	LinkConvisoPlatform string
+	Team                []string
 }
 
 type TaskResponse struct {
@@ -83,8 +84,8 @@ type TaskCreateRequest struct {
 }
 
 type CustomFieldRequest struct {
-	Id    string `json:"id"`
-	Value string `json:"value"`
+	Id    string      `json:"id"`
+	Value interface{} `json:"value"`
 }
 
 type CustomFieldsResponse struct {
