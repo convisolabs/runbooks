@@ -6,74 +6,7 @@ configclickUp:
   user: 42939438
   httpattempt: 3
 integrations:
-  # - integrationname: Banco Pan
-  #   clickupcustomerlist: Banco Pan
-  #   clickuplistid: 901301469417
-  #   platformid: 181
-
-  # - integrationname: Ben Visa Vale
-  #   clickupcustomerlist: Ben Visa Vale
-  #   clickuplistid: 901301469266
-  #   platformid: 622
-
-  # - integrationname: Construtora Tenda
-  #   clickupcustomerlist: Construtora Tenda
-  #   clickuplistid: 901301469002
-  #   platformid: 601
-
-  # - integrationname: Conviso
-  #   clickupcustomerlist: Conviso
-  #   clickuplistid: 901301469218
-  #   platformid: 11
-
-  # - integrationname: Conviso Academy
-  #   clickupcustomerlist: CONVISO Academy
-  #   clickuplistid: 901001661979
-  #   platformid: 0
-
-  # - integrationname: Hospital Albert Einstein
-  #   clickupcustomerlist: Hospital Albert Einstein
-  #   clickuplistid: 901301741282
-  #   platformid: 749
-
-  # - integrationname: Lojas RENNER
-  #   clickupcustomerlist: Lojas RENNER
-  #   clickuplistid: 901301468979
-  #   platformid: 19
-
-  # - integrationname: PDTec
-  #   clickupcustomerlist: PDTec
-  #   clickuplistid: 901301469505
-  #   platformid: 517
-
-  # - integrationname: Raia Drogasil
-  #   clickupcustomerlist: Raia Drogasil
-  #   clickuplistid: 901301439158
-  #   platformid: 477
-
-  # - integrationname: Stix
-  #   clickupcustomerlist: Stix
-  #   clickuplistid: 901301468963
-  #   platformid: 499
-
-  # - integrationname: Universidade Cruzeiro do Sul
-  #   clickupcustomerlist: Universidade Cruzeiro do Sul
-  #   clickuplistid: 901301468946
-  #   platformid: 544
-
-  # - integrationname: Vivo 4a Plataforma
-  #   clickupcustomerlist: VIVO
-  #   clickuplistid: 901301468955
-  #   platformid: 439
-  #   checkTagsValidationStory: "projetos de melhoria contínua;projetos de atividades recorrentes"
-
-  # - integrationname: Vivo Digital
-  #   clickupcustomerlist: VIVO
-  #   clickuplistid: 901301468955
-  #   platformid: 430
-  #   checkTagsValidationStory: "projetos de melhoria contínua;projetos de atividades recorrentes;Projetos do Gap Analysis"
-
-  - integrationname: XP
-    clickupcustomerlist: XP Investimentos
+  - integrationname: teste
+    clickupcustomerlist: teste
     clickuplistid: 901301468987
     platformid: 506
