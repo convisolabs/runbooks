@@ -129,11 +129,17 @@ func VerifyTasks(list type_clickup.ListResponse) {
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
 
-			if len(task.CustomField.Team) == 0 || !slices.Contains(task.CustomField.Team, variables_constant.CLICKUP_TEAM_ID_CONSULTING) {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-			}
+			// if len(task.CustomField.Team) == 0 {
+			// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+			// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
+			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+			// }
+
+			// if len(task.CustomField.Customer) == 0 {
+			// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+			// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Customer empty", " :: ", task.Url,
+			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+			// }
 		}
 	}
 }
@@ -159,27 +165,35 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 			fmt.Println(enum_clickup_type_consulting.ToString(customFieldTypeConsulting),
 				" Without ",
 				enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
-				" :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ", strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
-				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+				" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
+				" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
+				" :: ", service_clickup.RetAssigness(task.Assignees))
 			continue
 		}
 
-		if len(task.CustomField.Team) == 0 || !slices.Contains(task.CustomField.Team, variables_constant.CLICKUP_TEAM_ID_CONSULTING) {
-			fmt.Println("EPIC or Story without TEAM: ", list.Name, " - ", task.Name, " - ",
-				strings.ToLower(task.Status.Status), " :: ", task.Url,
-				" :: ", service_clickup.RetAssigness(task.Assignees))
-		}
+		// if len(task.CustomField.Team) == 0 {
+		// 	fmt.Println("EPIC or Story without TEAM: ", list.Name, " :: ", task.Name, " :: ",
+		// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
+		// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+		// }
+
+		// if len(task.CustomField.Customer) == 0 {
+		// 	fmt.Println("EPIC or Story without Customer: ", list.Name, " :: ", task.Name, " :: ",
+		// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
+		// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+		// }
 
 		if customFieldTypeConsulting == int(enum_clickup_type_consulting.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
 			if !service_clickup.CheckTags(task.Tags, variables_global.Customer.CheckTagsValidationStory) {
-				fmt.Println("Story without TAGS: ", list.Name, " - ", task.Name, " - ",
+				fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
 					strings.ToLower(task.Status.Status), " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 
 			}
 
 			if task.CustomField.LinkConvisoPlatform == "" || !strings.Contains(task.CustomField.LinkConvisoPlatform, "/projects/") {
-				fmt.Println("Story without Conviso Platform URL: ", list.Name, " - ", task.Name, " - ",
+				fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
+					" :: ", task.Name, " :: ",
 					strings.ToLower(task.Status.Status), " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
 			}
@@ -201,8 +215,10 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 					enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
 					" but is ",
 					enum_clickup_type_consulting.ToString(customFieldsSubTask),
-					" :: ", list.Name, " :: ", strings.ToLower(subTask.Status.Status), " :: ", subTask.Url,
-					" :: ", service_clickup.RetAssigness(subTask.Assignees))
+					" :: ", variables_global.Customer.IntegrationName, " :: ",
+					subTask.Name, " :: ",
+					strings.ToLower(subTask.Status.Status),
+					" :: ", subTask.Url, " :: ", service_clickup.RetAssigness(subTask.Assignees))
 			}
 		}
 	}
@@ -278,7 +294,9 @@ func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeC
 				hasUpdate = true
 			}
 
-			if subTask.Status.Status != "done" && subTask.Status.Status != "canceled" {
+			if !strings.EqualFold(subTask.Status.Status, "done") &&
+				!strings.EqualFold(subTask.Status.Status, "canceled") &&
+				!strings.EqualFold(subTask.Status.Status, "closed") {
 				allTaskDone = false
 			}
 
@@ -480,24 +498,38 @@ func CreateProject() {
 	}
 
 	customFieldUrlConvisoPlatform := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID,
+		variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK,
 		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(variables_global.Customer.PlatformID) + "/projects/" + project.Id,
 	}
 
 	customFieldTypeConsulting := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID,
+		variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
 		strconv.Itoa(enum_clickup_type_consulting.STORE),
 	}
 
-	customFieldTeam := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_TEAM_FIELD_ID,
-		[1]string{variables_constant.CLICKUP_TEAM_ID_CONSULTING},
+	// customFieldPSTeam := type_clickup.CustomFieldRequest{
+	// 	variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID,
+	// 	strconv.Itoa(enum_clickup_ps_team.CONSULTING),
+	// }
+
+	// customerOrder, err := service_clickup.RetClickUpDropDownPosition(variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+	// 	variables_global.Customer.ClickUpCustomerList)
+
+	if err != nil {
+		fmt.Println("Error customerOrder: Contact the system administrator")
+		return
 	}
+
+	// customFieldPSCustomer := type_clickup.CustomFieldRequest{
+	// 	variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+	// 	strconv.Itoa(customerOrder),
+	// }
 
 	customFieldsMainTask := []type_clickup.CustomFieldRequest{
 		customFieldUrlConvisoPlatform,
 		customFieldTypeConsulting,
-		customFieldTeam,
+		// customFieldPSTeam,
+		// customFieldPSCustomer,
 	}
 
 	assignessTask := []int64{variables_global.Config.ConfclickUp.User}
@@ -533,19 +565,20 @@ func CreateProject() {
 			convisoPlatformUrl.WriteString(project.Activities[i].Id)
 
 			customFieldUrlConvisoPlatformSubTask := type_clickup.CustomFieldRequest{
-				variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID,
+				variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK,
 				convisoPlatformUrl.String(),
 			}
 
 			customFieldTypeConsultingSubTask := type_clickup.CustomFieldRequest{
-				variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID,
+				variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
 				strconv.Itoa(enum_clickup_type_consulting.TASK),
 			}
 
 			customFieldsSubTask := []type_clickup.CustomFieldRequest{
 				customFieldUrlConvisoPlatformSubTask,
 				customFieldTypeConsultingSubTask,
-				customFieldTeam,
+				// customFieldPSTeam,
+				// customFieldPSCustomer,
 			}
 
 			sanitizedHTMLTitle := ""

@@ -26,7 +26,8 @@ type CustomFieldCustomized struct {
 	TypeConsulting      int
 	Customer            string
 	LinkConvisoPlatform string
-	Team                []string
+	//Team                []string
+	Team string
 }
 
 type TaskResponse struct {

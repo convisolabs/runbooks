@@ -35,47 +35,41 @@ func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	return ret
 }
 
-// func RetCustomerPosition() (string, error) {
-// 	result := ""
-// 	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+func RetClickUpDropDownPosition(clickupFieldId string, searchValue string) (int, error) {
+	result := -1
+	customFieldsResponse, err := RetCustomFieldCustomerPosition()
 
-// 	if err != nil {
-// 		return result, errors.New("Error RetCustomerPosition RequestCustomField: " + err.Error())
-// 	}
+	if err != nil {
+		return result, errors.New("Error RetClickUpDropDownPosition RequestCustomField: " + err.Error())
+	}
 
-// 	found := false
-// 	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+	for i := 0; i < len(customFieldsResponse.Fields); i++ {
 
-// 		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_CUSTOMER_FIELD_ID {
-// 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-// 				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(variables_global.Customer.ClickUpCustomerList) {
-// 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
-// 					found = true
-// 					break
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return result, nil
-// }
+		if customFieldsResponse.Fields[i].Id == clickupFieldId {
+			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+				if strings.EqualFold(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name, searchValue) {
+					return customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex, nil
+				}
+			}
+		}
+	}
+	return result, nil
+}
 
-func RetTeamPosition(team string) (string, error) {
+func RetClickUpDropDownOptionName(clickupFieldId string, order int) (string, error) {
 	result := ""
 	customFieldsResponse, err := RetCustomFieldCustomerPosition()
 
 	if err != nil {
-		return result, errors.New("Error RetTimePosition RequestCustomField: " + err.Error())
+		return result, errors.New("Error RetClickUpDropDownOptionName RequestCustomField: " + err.Error())
 	}
 
-	found := false
-	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+	for i := 0; i < len(customFieldsResponse.Fields); i++ {
 
-		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_TEAM_FIELD_ID {
+		if customFieldsResponse.Fields[i].Id == clickupFieldId {
 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == team {
-					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
-					found = true
-					break
+				if customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex == order {
+					return customFieldsResponse.Fields[i].TypeConfig.Options[j].Name, nil
 				}
 			}
 		}
@@ -85,7 +79,7 @@ func RetTeamPosition(team string) (string, error) {
 
 func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK {
 			if customFields[i].Value == nil {
 				return ""
 			} else {
@@ -96,9 +90,39 @@ func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	return ""
 }
 
+// func RetCustomFieldPSTeam(customFields []type_clickup.CustomField) string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+// 			if customFields[i].Value == nil {
+// 				return ""
+// 			} else {
+// 				return enum_clickup_ps_team.ToString(int(customFields[i].Value.(float64)))
+// 			}
+// 		}
+// 	}
+// 	return ""
+// }
+
+// func RetCustomFieldPSCustomer(customFields []type_clickup.CustomField) string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID {
+// 			if customFields[i].Value == nil {
+// 				return ""
+// 			} else {
+// 				if len(customFields[i].TypeConfig.Options) > int(customFields[i].Value.(float64)) {
+// 					return customFields[i].TypeConfig.Options[int(customFields[i].Value.(float64))].Name
+// 				} else {
+// 					return ""
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return ""
+// }
+
 func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY {
 			if customFields[i].Value == nil {
 				return -1
 			} else {
@@ -109,23 +133,23 @@ func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	return 0
 }
 
-func RetCustomFieldTeam(customFields []type_clickup.CustomField) []string {
-	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_TEAM_FIELD_ID {
-			if customFields[i].Value == nil {
-				return []string{}
-			} else {
-				aInterface := customFields[i].Value.([]interface{})
-				aString := make([]string, len(aInterface))
-				for i, v := range aInterface {
-					aString[i] = v.(string)
-				}
-				return aString
-			}
-		}
-	}
-	return []string{}
-}
+// func RetCustomFieldTeam(customFields []type_clickup.CustomField) []string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+// 			if customFields[i].Value == nil {
+// 				return []string{}
+// 			} else {
+// 				aInterface := customFields[i].Value.([]interface{})
+// 				aString := make([]string, len(aInterface))
+// 				for i, v := range aInterface {
+// 					aString[i] = v.(string)
+// 				}
+// 				return aString
+// 			}
+// 		}
+// 	}
+// 	return []string{}
+// }
 
 func RetCustomFieldCustomerPosition() (type_clickup.CustomFieldsResponse, error) {
 	var result type_clickup.CustomFieldsResponse
@@ -201,7 +225,7 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/task?custom_fields=[")
 	urlGetTasks.WriteString("{\"field_id\":\"")
-	urlGetTasks.WriteString(variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID)
+	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
 	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
 	urlGetTasks.WriteString(intTaskType)
 	urlGetTasks.WriteString("\"}")
@@ -224,26 +248,26 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	return resultTasks, nil
 }
 
-func ReturnLists() (type_clickup.ListsResponse, error) {
-	var result type_clickup.ListsResponse
+// func ReturnLists() (type_clickup.ListsResponse, error) {
+// 	var result type_clickup.ListsResponse
 
-	var urlGetLists bytes.Buffer
-	urlGetLists.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-	urlGetLists.WriteString("/folder/")
-	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
-	urlGetLists.WriteString("/list?archived=false")
+// 	var urlGetLists bytes.Buffer
+// 	urlGetLists.WriteString(variables_constant.CLICKUP_API_URL_BASE)
+// 	urlGetLists.WriteString("/folder/")
+// 	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
+// 	urlGetLists.WriteString("/list?archived=false")
 
-	request, err := functions.HttpRequestRetry(http.MethodGet, urlGetLists.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
-	if err != nil {
-		return result, errors.New("Error ReturnLists: " + err.Error())
-	}
+// 	request, err := functions.HttpRequestRetry(http.MethodGet, urlGetLists.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
+// 	if err != nil {
+// 		return result, errors.New("Error ReturnLists: " + err.Error())
+// 	}
 
-	data, _ := io.ReadAll(request.Body)
+// 	data, _ := io.ReadAll(request.Body)
 
-	json.Unmarshal([]byte(string(data)), &result)
+// 	json.Unmarshal([]byte(string(data)), &result)
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	var task type_clickup.TaskResponse
@@ -265,7 +289,8 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	//add customFields
 	task.CustomField.TypeConsulting = RetCustomFieldTypeConsulting(task.CustomFields)
 	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
-	task.CustomField.Team = RetCustomFieldTeam(task.CustomFields)
+	// task.CustomField.Team = RetCustomFieldPSTeam(task.CustomFields)
+	// task.CustomField.Customer = RetCustomFieldPSCustomer(task.CustomFields)
 
 	return task, nil
 }
@@ -304,7 +329,6 @@ func RetNewStatus(statusTask string, statusSubTask string) (string, bool) {
 			newReturn = "to do"
 			hasUpdate = true
 		}
-		break
 	case "in progress", "done":
 		if statusTask == "backlog" || statusTask == "to do" || statusTask == "blocked" {
 			newReturn = "in progress"
