@@ -381,11 +381,13 @@ func SearchRequimentsPlatform(reqSearch string) {
 		client := &http.Client{Timeout: time.Second * 10}
 		resp, err := client.Do(req)
 		defer req.Body.Close()
+
 		if err != nil {
 			fmt.Println("Error SearchRequimentsPlatform ClientDo: ", err.Error())
 			return
 		}
-		data, _ := ioutil.ReadAll(resp.Body)
+
+		data, _ := io.ReadAll(resp.Body)
 
 		json.Unmarshal([]byte(string(data)), &result)
 
@@ -664,21 +666,23 @@ func UpdateActivityRequirement(task type_clickup.TaskResponse, project type_plat
 
 		if error == nil {
 			idxActivity := slices.IndexFunc(project.Activities, func(a type_platform.ActivityCollectionResponse) bool { return a.Id == strconv.Itoa(activityId) })
-			switch strings.ToLower(task.Status.Status) {
-			case "backlog", "to do":
-				if strings.ToLower(project.Activities[idxActivity].Status) == "done" {
-					ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.RESTART)
-				}
-			case "in progress":
-				if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
-					ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
-				}
-			case "done":
-				if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
-					ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
-					ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
-				} else if strings.ToLower(project.Activities[idxActivity].Status) == "in_progress" {
-					ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
+			if idxActivity != -1 {
+				switch strings.ToLower(task.Status.Status) {
+				case "backlog", "to do":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "done" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.RESTART)
+					}
+				case "in progress":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
+					}
+				case "done":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
+					} else if strings.ToLower(project.Activities[idxActivity].Status) == "in_progress" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
+					}
 				}
 			}
 		} else {

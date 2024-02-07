@@ -6,16 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var globalClickupHeaders map[string]string
+
+func init() {
+	globalClickupHeaders = map[string]string{
+		"Authorization": os.Getenv(variables_constant.CLICKUP_TOKEN_NAME),
+	}
+}
 
 func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	ret := ""
@@ -27,33 +35,51 @@ func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	return ret
 }
 
-// func RetCustomerPosition() (string, error) {
-// 	result := ""
-// 	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+func RetClickUpDropDownPosition(clickupListId string, clickupFieldId string, searchValue string) (int, error) {
+	result := -1
+	customFieldsResponse, err := RetAllCustomFieldByList(clickupListId)
 
-// 	if err != nil {
-// 		return result, errors.New("Error RetCustomerPosition RequestCustomField: " + err.Error())
-// 	}
+	if err != nil {
+		return result, errors.New("Error RetClickUpDropDownPosition RequestCustomField: " + err.Error())
+	}
 
-// 	found := false
-// 	for i := 0; i < len(customFieldsResponse.Fields) && found == false; i++ {
+	for i := 0; i < len(customFieldsResponse.Fields); i++ {
 
-// 		if customFieldsResponse.Fields[i].Id == variables_constant.CLICKUP_CUSTOMER_FIELD_ID {
-// 			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
-// 				if strings.ToLower(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name) == strings.ToLower(variables_global.Customer.ClickUpCustomerList) {
-// 					result = strconv.Itoa(customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex)
-// 					found = true
-// 					break
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return result, nil
-// }
+		if customFieldsResponse.Fields[i].Id == clickupFieldId {
+			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+				if strings.EqualFold(customFieldsResponse.Fields[i].TypeConfig.Options[j].Name, searchValue) {
+					return customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex, nil
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
+func RetClickUpDropDownOptionName(clickupFieldId string, order int) (string, error) {
+	result := ""
+	customFieldsResponse, err := RetAllCustomFieldByList(clickupFieldId)
+
+	if err != nil {
+		return result, errors.New("Error RetClickUpDropDownOptionName RequestCustomField: " + err.Error())
+	}
+
+	for i := 0; i < len(customFieldsResponse.Fields); i++ {
+
+		if customFieldsResponse.Fields[i].Id == clickupFieldId {
+			for j := 0; j < len(customFieldsResponse.Fields[i].TypeConfig.Options); j++ {
+				if customFieldsResponse.Fields[i].TypeConfig.Options[j].OrderIndex == order {
+					return customFieldsResponse.Fields[i].TypeConfig.Options[j].Name, nil
+				}
+			}
+		}
+	}
+	return result, nil
+}
 
 func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_URL_CONVISO_PLATFORM_FIELD_ID {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK {
 			if customFields[i].Value == nil {
 				return ""
 			} else {
@@ -64,9 +90,39 @@ func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	return ""
 }
 
+// func RetCustomFieldPSTeam(customFields []type_clickup.CustomField) string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+// 			if customFields[i].Value == nil {
+// 				return ""
+// 			} else {
+// 				return enum_clickup_ps_team.ToString(int(customFields[i].Value.(float64)))
+// 			}
+// 		}
+// 	}
+// 	return ""
+// }
+
+// func RetCustomFieldPSCustomer(customFields []type_clickup.CustomField) string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID {
+// 			if customFields[i].Value == nil {
+// 				return ""
+// 			} else {
+// 				if len(customFields[i].TypeConfig.Options) > int(customFields[i].Value.(float64)) {
+// 					return customFields[i].TypeConfig.Options[int(customFields[i].Value.(float64))].Name
+// 				} else {
+// 					return ""
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return ""
+// }
+
 func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY {
 			if customFields[i].Value == nil {
 				return -1
 			} else {
@@ -77,31 +133,40 @@ func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	return 0
 }
 
-func RetCustomFieldCustomerPosition() (type_clickup.CustomFieldsResponse, error) {
+// func RetCustomFieldTeam(customFields []type_clickup.CustomField) []string {
+// 	for i := 0; i < len(customFields); i++ {
+// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+// 			if customFields[i].Value == nil {
+// 				return []string{}
+// 			} else {
+// 				aInterface := customFields[i].Value.([]interface{})
+// 				aString := make([]string, len(aInterface))
+// 				for i, v := range aInterface {
+// 					aString[i] = v.(string)
+// 				}
+// 				return aString
+// 			}
+// 		}
+// 	}
+// 	return []string{}
+// }
+
+func RetAllCustomFieldByList(listId string) (type_clickup.CustomFieldsResponse, error) {
 	var result type_clickup.CustomFieldsResponse
 	var urlGetTasks bytes.Buffer
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
-	urlGetTasks.WriteString(variables_global.Customer.ClickUpListId)
+	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/field")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-	if err != nil {
-		return result, errors.New("Error RetCustomerPosition NewRequest: " + err.Error())
-	}
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	if resp.StatusCode != 200 {
-		return result, errors.New("Error RetCustomerPosition StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return result, errors.New("Error RetCustomerPosition ClientDo: " + err.Error())
+		return result, errors.New("Error RetCustomerPosition: " + err.Error())
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+
+	data, _ := io.ReadAll(response.Body)
+
 	json.Unmarshal([]byte(string(data)), &result)
 
 	return result, nil
@@ -149,84 +214,63 @@ func VerifyTasks(taskEpic type_clickup.TaskResponse) error {
 	return nil
 }
 
-func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error) {
+func ReturnTasks(listId string, taskType int, page int) (type_clickup.TasksResponse, error) {
 	var resultTasks type_clickup.TasksResponse
 	var urlGetTasks bytes.Buffer
 
-	teste := strconv.FormatInt(int64(taskType), 10)
+	intTaskType := strconv.FormatInt(int64(taskType), 10)
+	strPage := strconv.FormatInt(int64(page), 10)
 
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
 	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/task?custom_fields=[")
 	urlGetTasks.WriteString("{\"field_id\":\"")
-	urlGetTasks.WriteString(variables_constant.CLICKUP_TYPE_CONSULTING_FIELD_ID)
+	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
 	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
-	urlGetTasks.WriteString(teste)
+	urlGetTasks.WriteString(intTaskType)
 	urlGetTasks.WriteString("\"}")
 	urlGetTasks.WriteString("]")
 	urlGetTasks.WriteString("&include_closed=true")
 	urlGetTasks.WriteString("&date_updated_gt=")
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
 	urlGetTasks.WriteString("&subtasks=true")
+	urlGetTasks.WriteString("&page=")
+	urlGetTasks.WriteString(strPage)
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTasks.String(), nil)
-	if err != nil {
-		return resultTasks, errors.New("Error ReturnTasks request: " + err.Error())
-	}
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return resultTasks, errors.New("Error ReturnTasks StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return resultTasks, errors.New("Error ReturnTasks response: " + err.Error())
+		return resultTasks, errors.New("Error ReturnTasks: " + err.Error())
 	}
 
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(response.Body)
+
 	json.Unmarshal([]byte(string(data)), &resultTasks)
+
 	return resultTasks, nil
 }
 
-func ReturnLists() (type_clickup.ListsResponse, error) {
-	var result type_clickup.ListsResponse
+// func ReturnLists() (type_clickup.ListsResponse, error) {
+// 	var result type_clickup.ListsResponse
 
-	var urlGetLists bytes.Buffer
-	urlGetLists.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-	urlGetLists.WriteString("/folder/")
-	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
-	urlGetLists.WriteString("/list?archived=false")
+// 	var urlGetLists bytes.Buffer
+// 	urlGetLists.WriteString(variables_constant.CLICKUP_API_URL_BASE)
+// 	urlGetLists.WriteString("/folder/")
+// 	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
+// 	urlGetLists.WriteString("/list?archived=false")
 
-	time.Sleep(time.Second)
+// 	request, err := functions.HttpRequestRetry(http.MethodGet, urlGetLists.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
+// 	if err != nil {
+// 		return result, errors.New("Error ReturnLists: " + err.Error())
+// 	}
 
-	req, err := http.NewRequest(http.MethodGet, urlGetLists.String(), nil)
-	if err != nil {
-		return result, errors.New("Error ReturnLists request: " + err.Error())
-	}
+// 	data, _ := io.ReadAll(request.Body)
 
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
+// 	json.Unmarshal([]byte(string(data)), &result)
 
-	if resp.StatusCode != 200 {
-		return result, errors.New("Error ReturnLists StatusCode: " + http.StatusText(resp.StatusCode))
-	}
-
-	if err != nil {
-		return result, errors.New("Error ReturnLists response: " + err.Error())
-	}
-
-	data, _ := io.ReadAll(resp.Body)
-
-	json.Unmarshal([]byte(string(data)), &result)
-
-	return result, nil
-}
+// 	return result, nil
+// }
 
 func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	var task type_clickup.TaskResponse
@@ -234,34 +278,22 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	urlGetTask.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTask.WriteString("task/")
 	urlGetTask.WriteString(taskId)
-
 	urlGetTask.WriteString("?include_subtasks=true")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetTask.String(), nil)
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTask.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 	if err != nil {
-		return task, errors.New("Error ReturnTask request: " + err.Error())
+		return task, errors.New("Error ReturnTask: " + err.Error())
 	}
 
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return task, errors.New("Error ReturnTask StatusCode: " + http.StatusText(resp.StatusCode))
-	}
-
-	if err != nil {
-		return task, errors.New("Error ReturnTask response: " + err.Error())
-	}
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(response.Body)
 
 	json.Unmarshal([]byte(string(data)), &task)
 
 	//add customFields
 	task.CustomField.TypeConsulting = RetCustomFieldTypeConsulting(task.CustomFields)
 	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
+	// task.CustomField.Team = RetCustomFieldPSTeam(task.CustomFields)
+	// task.CustomField.Customer = RetCustomFieldPSCustomer(task.CustomFields)
 
 	return task, nil
 }
@@ -272,28 +304,15 @@ func ReturnList(listId string) (type_clickup.ListResponse, error) {
 	urlGetList.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetList.WriteString("list/")
 	urlGetList.WriteString(listId)
-
 	urlGetList.WriteString("?include_subtasks=true")
 
-	time.Sleep(time.Second)
-
-	req, err := http.NewRequest(http.MethodGet, urlGetList.String(), nil)
-	if err != nil {
-		return list, errors.New("Error ReturnList request: " + err.Error())
-	}
-
-	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-
-	if resp.StatusCode != 200 {
-		return list, errors.New("Error ReturnList StatusCode: " + http.StatusText(resp.StatusCode))
-	}
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetList.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
 	if err != nil {
-		return list, errors.New("Error ReturnList response: " + err.Error())
+		return list, errors.New("Error ReturnList: " + err.Error())
 	}
-	data, _ := io.ReadAll(resp.Body)
+
+	data, _ := io.ReadAll(response.Body)
 
 	json.Unmarshal([]byte(string(data)), &list)
 
@@ -313,7 +332,6 @@ func RetNewStatus(statusTask string, statusSubTask string) (string, bool) {
 			newReturn = "to do"
 			hasUpdate = true
 		}
-		break
 	case "in progress", "done":
 		if statusTask == "backlog" || statusTask == "to do" || statusTask == "blocked" {
 			newReturn = "in progress"
@@ -471,4 +489,20 @@ func TaskCreateRequest(request type_clickup.TaskCreateRequest) (type_clickup.Tas
 	json.Unmarshal([]byte(string(data)), &result)
 
 	return result, nil
+}
+
+func CheckTags(tags []type_clickup.TagResponse, value string) bool {
+	ret := false
+
+	vetValue := strings.Split(value, ";")
+
+	for i := 0; i < len(tags); i++ {
+		for j := 0; j < len(vetValue); j++ {
+			if strings.ToLower(tags[i].Name) == strings.ToLower(vetValue[j]) {
+				return true
+			}
+		}
+	}
+
+	return ret
 }

@@ -1,14 +1,16 @@
 package type_config
 
 type ConfigTypeIntegration struct {
-	IntegrationName     string `yaml:"integrationname"`
-	PlatformID          int    `yaml:"platformid"`
-	ClickUpListId       string `yaml:"clickuplistid"`
-	ClickUpCustomerList string `yaml:"clickupcustomerlist"`
+	IntegrationName          string `yaml:"integrationname"`
+	PlatformID               int    `yaml:"platformid"`
+	ClickUpListId            string `yaml:"clickuplistid"`
+	ClickUpCustomerList      string `yaml:"clickupcustomerlist"`
+	CheckTagsValidationStory string `yaml:"checkTagsValidationStory"`
 }
 
 type ConfigTypeClickup struct {
-	User int64 `yaml:"user"`
+	User        int64 `yaml:"user"`
+	HttpAttempt *int  `yaml:"httpattempt",omitempty`
 }
 
 type ConfigTypeGeneral struct {

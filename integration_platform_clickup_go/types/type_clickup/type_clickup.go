@@ -1,5 +1,9 @@
 package type_clickup
 
+type TagResponse struct {
+	Name string `json:"name"`
+}
+
 type ListResponse struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
@@ -22,6 +26,8 @@ type CustomFieldCustomized struct {
 	TypeConsulting      int
 	Customer            string
 	LinkConvisoPlatform string
+	//Team                []string
+	Team string
 }
 
 type TaskResponse struct {
@@ -40,11 +46,13 @@ type TaskResponse struct {
 	Url          string             `json:"url"`
 	Parent       string             `json:"parent"`
 	Assignees    []AssigneeField    `json:"assignees"`
+	Tags         []TagResponse      `json:"tags"`
 	CustomField  CustomFieldCustomized
 }
 
 type TasksResponse struct {
-	Tasks []TaskResponse `json:"tasks"`
+	Tasks    []TaskResponse `json:"tasks"`
+	LastPage bool           `json:"last_page"`
 }
 
 type TaskRequest struct {
@@ -78,8 +86,8 @@ type TaskCreateRequest struct {
 }
 
 type CustomFieldRequest struct {
-	Id    string `json:"id"`
-	Value string `json:"value"`
+	Id    string      `json:"id"`
+	Value interface{} `json:"value"`
 }
 
 type CustomFieldsResponse struct {
@@ -90,8 +98,7 @@ type CustomField struct {
 	Id         string                `json:"id"`
 	Name       string                `json:"name"`
 	TypeConfig CustomFieldTypeConfig `json:"type_config"`
-	//ValueString string                `json:"value"`
-	Value interface{} `json:"value"`
+	Value      interface{}           `json:"value"`
 }
 
 type AssigneeField struct {
