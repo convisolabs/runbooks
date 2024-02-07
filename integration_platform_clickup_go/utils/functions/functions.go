@@ -73,7 +73,7 @@ func GetTextWithSpace(label string) string {
 
 	EOL := byte('\r')
 
-	if strings.ToLower(runtime.GOOS) == "linux" {
+	if !strings.EqualFold(runtime.GOOS, "windows") {
 		EOL = byte('\n')
 	}
 

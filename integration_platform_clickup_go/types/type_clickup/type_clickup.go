@@ -51,7 +51,8 @@ type TaskResponse struct {
 }
 
 type TasksResponse struct {
-	Tasks []TaskResponse `json:"tasks"`
+	Tasks    []TaskResponse `json:"tasks"`
+	LastPage bool           `json:"last_page"`
 }
 
 type TaskRequest struct {

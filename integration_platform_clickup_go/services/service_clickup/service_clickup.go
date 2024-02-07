@@ -35,9 +35,9 @@ func RetAssigness(assignees []type_clickup.AssigneeField) string {
 	return ret
 }
 
-func RetClickUpDropDownPosition(clickupFieldId string, searchValue string) (int, error) {
+func RetClickUpDropDownPosition(clickupListId string, clickupFieldId string, searchValue string) (int, error) {
 	result := -1
-	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+	customFieldsResponse, err := RetAllCustomFieldByList(clickupListId)
 
 	if err != nil {
 		return result, errors.New("Error RetClickUpDropDownPosition RequestCustomField: " + err.Error())
@@ -58,7 +58,7 @@ func RetClickUpDropDownPosition(clickupFieldId string, searchValue string) (int,
 
 func RetClickUpDropDownOptionName(clickupFieldId string, order int) (string, error) {
 	result := ""
-	customFieldsResponse, err := RetCustomFieldCustomerPosition()
+	customFieldsResponse, err := RetAllCustomFieldByList(clickupFieldId)
 
 	if err != nil {
 		return result, errors.New("Error RetClickUpDropDownOptionName RequestCustomField: " + err.Error())
@@ -151,12 +151,12 @@ func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 // 	return []string{}
 // }
 
-func RetCustomFieldCustomerPosition() (type_clickup.CustomFieldsResponse, error) {
+func RetAllCustomFieldByList(listId string) (type_clickup.CustomFieldsResponse, error) {
 	var result type_clickup.CustomFieldsResponse
 	var urlGetTasks bytes.Buffer
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
-	urlGetTasks.WriteString(variables_global.Customer.ClickUpListId)
+	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/field")
 
 	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
@@ -214,11 +214,12 @@ func VerifyTasks(taskEpic type_clickup.TaskResponse) error {
 	return nil
 }
 
-func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error) {
+func ReturnTasks(listId string, taskType int, page int) (type_clickup.TasksResponse, error) {
 	var resultTasks type_clickup.TasksResponse
 	var urlGetTasks bytes.Buffer
 
 	intTaskType := strconv.FormatInt(int64(taskType), 10)
+	strPage := strconv.FormatInt(int64(page), 10)
 
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
@@ -234,6 +235,8 @@ func ReturnTasks(listId string, taskType int) (type_clickup.TasksResponse, error
 	urlGetTasks.WriteString("&date_updated_gt=")
 	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
 	urlGetTasks.WriteString("&subtasks=true")
+	urlGetTasks.WriteString("&page=")
+	urlGetTasks.WriteString(strPage)
 
 	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 

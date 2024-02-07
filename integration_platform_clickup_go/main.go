@@ -7,6 +7,7 @@ import (
 	"integration_platform_clickup_go/services/service_clickup"
 	"integration_platform_clickup_go/services/service_conviso_platform"
 	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/types/type_enum/enum_clickup_ps_team"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_type_consulting"
 	"integration_platform_clickup_go/types/type_platform"
 	"integration_platform_clickup_go/utils/functions"
@@ -81,147 +82,171 @@ func VerifyErrorsProjectWithStore(list type_clickup.ListResponse) {
 }
 
 func VerifyTasks(list type_clickup.ListResponse) {
-	tasks, err := service_clickup.ReturnTasks(list.Id, int(enum_clickup_type_consulting.TASK))
 
-	if err != nil {
-		fmt.Println("Error VerifyTasks :: ", err.Error())
-		return
-	}
+	page := 0
 
-	for i := 0; i < len(tasks.Tasks); i++ {
-		task, err := service_clickup.ReturnTask(tasks.Tasks[i].Id)
+	for {
+
+		tasks, err := service_clickup.ReturnTasks(list.Id, int(enum_clickup_type_consulting.TASK), page)
 
 		if err != nil {
-			fmt.Println("Error VerifyTasks GetTask :: ", err.Error())
+			fmt.Println("Error VerifyTasks :: ", err.Error())
 			return
 		}
 
-		if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "closed" {
+		for i := 0; i < len(tasks.Tasks); i++ {
+			task, err := service_clickup.ReturnTask(tasks.Tasks[i].Id)
 
-			if task.Parent == "" {
-				fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
-					" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
-				continue
+			if err != nil {
+				fmt.Println("Error VerifyTasks GetTask :: ", err.Error())
+				return
 			}
 
-			if task.DueDate == "" {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
+			if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "closed" {
+
+				if task.Parent == "" {
+					fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ",
+						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
+						" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+					continue
+				}
+
+				if task.DueDate == "" {
+					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
+
+				if task.StartDate == "" {
+					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
+
+				if task.TimeEstimate == 0 {
+					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
+
+				if task.Status.Status == "done" && task.TimeSpent == 0 {
+					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
+
+				// if len(task.CustomField.Team) == 0 {
+				// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+				// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
+				// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+				// }
+
+				// if len(task.CustomField.Customer) == 0 {
+				// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
+				// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Customer empty", " :: ", task.Url,
+				// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+				// }
 			}
-
-			if task.StartDate == "" {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-			}
-
-			if task.TimeEstimate == 0 {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-			}
-
-			if task.Status.Status == "done" && task.TimeSpent == 0 {
-				fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-					strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-			}
-
-			// if len(task.CustomField.Team) == 0 {
-			// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-			// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
-			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-			// }
-
-			// if len(task.CustomField.Customer) == 0 {
-			// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-			// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Customer empty", " :: ", task.Url,
-			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-			// }
 		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
 	}
 }
 
 func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int, customFieldTypeConsultingSubTask int) {
 
-	tasks, err := service_clickup.ReturnTasks(list.Id, customFieldTypeConsulting)
+	page := 0
 
-	if err != nil {
-		fmt.Println("Error VerifySubtask :: ", err.Error())
-		return
-	}
+	for {
 
-	for i := 0; i < len(tasks.Tasks); i++ {
-		task, err := service_clickup.ReturnTask(tasks.Tasks[i].Id)
+		tasks, err := service_clickup.ReturnTasks(list.Id, customFieldTypeConsulting, page)
 
 		if err != nil {
-			fmt.Println("Error VerifySubtask GetTask :: ", err.Error())
+			fmt.Println("Error VerifySubtask :: ", err.Error())
 			return
 		}
 
-		if len(task.SubTasks) == 0 {
-			fmt.Println(enum_clickup_type_consulting.ToString(customFieldTypeConsulting),
-				" Without ",
-				enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
-				" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
-				" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
-				" :: ", service_clickup.RetAssigness(task.Assignees))
-			continue
-		}
+		for i := 0; i < len(tasks.Tasks); i++ {
+			task, err := service_clickup.ReturnTask(tasks.Tasks[i].Id)
 
-		// if len(task.CustomField.Team) == 0 {
-		// 	fmt.Println("EPIC or Story without TEAM: ", list.Name, " :: ", task.Name, " :: ",
-		// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
-		// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-		// }
-
-		// if len(task.CustomField.Customer) == 0 {
-		// 	fmt.Println("EPIC or Story without Customer: ", list.Name, " :: ", task.Name, " :: ",
-		// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
-		// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-		// }
-
-		if customFieldTypeConsulting == int(enum_clickup_type_consulting.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
-			if !service_clickup.CheckTags(task.Tags, variables_global.Customer.CheckTagsValidationStory) {
-				fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
-					strings.ToLower(task.Status.Status), " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-
-			}
-
-			if task.CustomField.LinkConvisoPlatform == "" || !strings.Contains(task.CustomField.LinkConvisoPlatform, "/projects/") {
-				fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
-					" :: ", task.Name, " :: ",
-					strings.ToLower(task.Status.Status), " :: ", task.Url,
-					" :: ", service_clickup.RetAssigness(task.Assignees))
-			}
-		}
-
-		for j := 0; j < len(task.SubTasks); j++ {
-			subTask, err := service_clickup.ReturnTask(task.SubTasks[j].Id)
 			if err != nil {
-				fmt.Println("Error VerifySubtask GetTask GetSubTask :: ", err.Error())
+				fmt.Println("Error VerifySubtask GetTask :: ", err.Error())
 				return
 			}
 
-			customFieldsSubTask := service_clickup.RetCustomFieldTypeConsulting(subTask.CustomFields)
-
-			if customFieldsSubTask != customFieldTypeConsultingSubTask {
-				fmt.Println(
-					subTask.Name,
-					" should be ",
+			if len(task.SubTasks) == 0 {
+				fmt.Println(enum_clickup_type_consulting.ToString(customFieldTypeConsulting),
+					" Without ",
 					enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
-					" but is ",
-					enum_clickup_type_consulting.ToString(customFieldsSubTask),
-					" :: ", variables_global.Customer.IntegrationName, " :: ",
-					subTask.Name, " :: ",
-					strings.ToLower(subTask.Status.Status),
-					" :: ", subTask.Url, " :: ", service_clickup.RetAssigness(subTask.Assignees))
+					" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
+					" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
+					" :: ", service_clickup.RetAssigness(task.Assignees))
+				continue
+			}
+
+			// if len(task.CustomField.Team) == 0 {
+			// 	fmt.Println("EPIC or Story without TEAM: ", list.Name, " :: ", task.Name, " :: ",
+			// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
+			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+			// }
+
+			// if len(task.CustomField.Customer) == 0 {
+			// 	fmt.Println("EPIC or Story without Customer: ", list.Name, " :: ", task.Name, " :: ",
+			// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
+			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
+			// }
+
+			if customFieldTypeConsulting == int(enum_clickup_type_consulting.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
+				if !service_clickup.CheckTags(task.Tags, variables_global.Customer.CheckTagsValidationStory) {
+					fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+
+				}
+
+				if task.CustomField.LinkConvisoPlatform == "" || !strings.Contains(task.CustomField.LinkConvisoPlatform, "/projects/") {
+					fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
+						" :: ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
+			}
+
+			for j := 0; j < len(task.SubTasks); j++ {
+				subTask, err := service_clickup.ReturnTask(task.SubTasks[j].Id)
+				if err != nil {
+					fmt.Println("Error VerifySubtask GetTask GetSubTask :: ", err.Error())
+					return
+				}
+
+				customFieldsSubTask := service_clickup.RetCustomFieldTypeConsulting(subTask.CustomFields)
+
+				if customFieldsSubTask != customFieldTypeConsultingSubTask {
+					fmt.Println(
+						subTask.Name,
+						" should be ",
+						enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
+						" but is ",
+						enum_clickup_type_consulting.ToString(customFieldsSubTask),
+						" :: ", variables_global.Customer.IntegrationName, " :: ",
+						subTask.Name, " :: ",
+						strings.ToLower(subTask.Status.Status),
+						" :: ", subTask.Url, " :: ", service_clickup.RetAssigness(subTask.Assignees))
+				}
 			}
 		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
 	}
+
 }
 
 func UpdateProjectWithStore(list type_clickup.ListResponse) {
@@ -230,116 +255,126 @@ func UpdateProjectWithStore(list type_clickup.ListResponse) {
 }
 
 func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
+	page := 0
 
-	tasks, err := service_clickup.ReturnTasks(list.Id, typeConsultingTask)
+	for {
 
-	if err != nil {
-		fmt.Println("Error UpdateSubtask :: ", err.Error())
-		return
-	}
-
-	var sliceParentId []string
-
-	for i := 0; i < len(tasks.Tasks); i++ {
-		if tasks.Tasks[i].Parent == "" {
-			continue
-		}
-
-		if slices.Contains(sliceParentId, tasks.Tasks[i].Parent) {
-			continue
-		}
-
-		sliceParentId = append(sliceParentId, tasks.Tasks[i].Parent)
-
-		taskParent, err := service_clickup.ReturnTask((tasks.Tasks[i].Parent))
-
-		var convisoPlatformProject type_platform.Project
+		tasks, err := service_clickup.ReturnTasks(list.Id, typeConsultingTask, page)
 
 		if err != nil {
-			fmt.Println("Error UpdateSubtask GetTask Parent :: ", err.Error())
-			continue
+			fmt.Println("Error UpdateSubtask :: ", err.Error())
+			return
 		}
 
-		var requestTask type_clickup.TaskRequestStore
-		requestTask.Status = taskParent.Status.Status
-		requestTask.DueDate, _ = strconv.ParseInt(taskParent.DueDate, 10, 64)
-		requestTask.StartDate, _ = strconv.ParseInt(taskParent.StartDate, 10, 64)
-		allTaskDone := true
-		hasUpdate := false
-		for j := 0; j < len(taskParent.SubTasks); j++ {
-			subTask, err := service_clickup.ReturnTask(taskParent.SubTasks[j].Id)
-			if err != nil {
-				fmt.Println("Error UpdateSubtask GetTask SubTask :: ", err.Error())
-				return
-			}
-			var auxStartDate int64
-			var auxDueDate int64
+		var sliceParentId []string
 
-			auxStartDate, _ = strconv.ParseInt(subTask.StartDate, 10, 64)
-			auxDueDate, _ = strconv.ParseInt(subTask.DueDate, 10, 64)
-			if (auxStartDate < requestTask.StartDate && auxStartDate != 0) || (auxStartDate != 0 && requestTask.StartDate == 0) {
-				requestTask.StartDate = auxStartDate
-				hasUpdate = true
+		for i := 0; i < len(tasks.Tasks); i++ {
+			if tasks.Tasks[i].Parent == "" {
+				continue
 			}
 
-			if (auxDueDate > requestTask.DueDate && auxDueDate != 0) || (auxDueDate != 0 && requestTask.DueDate == 0) {
-				requestTask.DueDate = auxDueDate
-				hasUpdate = true
+			if slices.Contains(sliceParentId, tasks.Tasks[i].Parent) {
+				continue
 			}
 
-			hasUpdateStatus := false
-			requestTask.Status, hasUpdateStatus = service_clickup.RetNewStatus(requestTask.Status, subTask.Status.Status)
+			sliceParentId = append(sliceParentId, tasks.Tasks[i].Parent)
 
-			if hasUpdateStatus {
-				hasUpdate = true
-			}
+			taskParent, err := service_clickup.ReturnTask((tasks.Tasks[i].Parent))
 
-			if !strings.EqualFold(subTask.Status.Status, "done") &&
-				!strings.EqualFold(subTask.Status.Status, "canceled") &&
-				!strings.EqualFold(subTask.Status.Status, "closed") {
-				allTaskDone = false
-			}
-
-			if taskParent.CustomField.TypeConsulting == enum_clickup_type_consulting.STORE &&
-				taskParent.CustomField.LinkConvisoPlatform != "" && convisoPlatformProject.Id == "" {
-
-				projectId, err := service_conviso_platform.RetProjectIdCustomField(taskParent.CustomField.LinkConvisoPlatform)
-
-				if err == nil {
-					convisoPlatformProject, err = service_conviso_platform.GetProject(projectId)
-					if err != nil {
-						fmt.Println("Error GetProject Conviso Platform :: ", err.Error())
-					}
-				} else {
-					fmt.Println("Error RetProjectIdCustomField Conviso Platform :: ", err.Error())
-				}
-			}
-
-			//update the activity in conviso platform project
-			err = service_conviso_platform.UpdateActivityRequirement(subTask, convisoPlatformProject)
+			var convisoPlatformProject type_platform.Project
 
 			if err != nil {
-				fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
+				fmt.Println("Error UpdateSubtask GetTask Parent :: ", err.Error())
+				continue
 			}
 
-		}
-
-		if allTaskDone {
-			requestTask.Status = "done"
-			hasUpdate = true
-		}
-
-		if hasUpdate {
-			err = service_clickup.RequestPutTaskStore(taskParent.Id, requestTask)
-			if err != nil {
-				fmt.Println("Store not possible update in clickup")
-			} else {
-				err = service_conviso_platform.UpdateProjectRest(requestTask, convisoPlatformProject.Id, taskParent.TimeEstimate)
+			var requestTask type_clickup.TaskRequestStore
+			requestTask.Status = taskParent.Status.Status
+			requestTask.DueDate, _ = strconv.ParseInt(taskParent.DueDate, 10, 64)
+			requestTask.StartDate, _ = strconv.ParseInt(taskParent.StartDate, 10, 64)
+			allTaskDone := true
+			hasUpdate := false
+			for j := 0; j < len(taskParent.SubTasks); j++ {
+				subTask, err := service_clickup.ReturnTask(taskParent.SubTasks[j].Id)
 				if err != nil {
-					fmt.Println("Store not possible update in conviso platform")
+					fmt.Println("Error UpdateSubtask GetTask SubTask :: ", err.Error())
+					return
+				}
+				var auxStartDate int64
+				var auxDueDate int64
+
+				auxStartDate, _ = strconv.ParseInt(subTask.StartDate, 10, 64)
+				auxDueDate, _ = strconv.ParseInt(subTask.DueDate, 10, 64)
+				if (auxStartDate < requestTask.StartDate && auxStartDate != 0) || (auxStartDate != 0 && requestTask.StartDate == 0) {
+					requestTask.StartDate = auxStartDate
+					hasUpdate = true
+				}
+
+				if (auxDueDate > requestTask.DueDate && auxDueDate != 0) || (auxDueDate != 0 && requestTask.DueDate == 0) {
+					requestTask.DueDate = auxDueDate
+					hasUpdate = true
+				}
+
+				hasUpdateStatus := false
+				requestTask.Status, hasUpdateStatus = service_clickup.RetNewStatus(requestTask.Status, subTask.Status.Status)
+
+				if hasUpdateStatus {
+					hasUpdate = true
+				}
+
+				if !strings.EqualFold(subTask.Status.Status, "done") &&
+					!strings.EqualFold(subTask.Status.Status, "canceled") &&
+					!strings.EqualFold(subTask.Status.Status, "closed") {
+					allTaskDone = false
+				}
+
+				if taskParent.CustomField.TypeConsulting == enum_clickup_type_consulting.STORE &&
+					taskParent.CustomField.LinkConvisoPlatform != "" && convisoPlatformProject.Id == "" {
+
+					projectId, err := service_conviso_platform.RetProjectIdCustomField(taskParent.CustomField.LinkConvisoPlatform)
+
+					if err == nil {
+						convisoPlatformProject, err = service_conviso_platform.GetProject(projectId)
+						if err != nil {
+							fmt.Println("Error GetProject Conviso Platform :: ", err.Error())
+						}
+					} else {
+						fmt.Println("Error RetProjectIdCustomField Conviso Platform :: ", err.Error())
+					}
+				}
+
+				//update the activity in conviso platform project
+				err = service_conviso_platform.UpdateActivityRequirement(subTask, convisoPlatformProject)
+
+				if err != nil {
+					fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
+				}
+
+			}
+
+			if allTaskDone {
+				requestTask.Status = "done"
+				hasUpdate = true
+			}
+
+			if hasUpdate {
+				err = service_clickup.RequestPutTaskStore(taskParent.Id, requestTask)
+				if err != nil {
+					fmt.Println("Store not possible update in clickup")
+				} else {
+					err = service_conviso_platform.UpdateProjectRest(requestTask, convisoPlatformProject.Id, taskParent.TimeEstimate)
+					if err != nil {
+						fmt.Println("Store not possible update in conviso platform")
+					}
 				}
 			}
 		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
 	}
 }
 
@@ -502,34 +537,34 @@ func CreateProject() {
 		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(variables_global.Customer.PlatformID) + "/projects/" + project.Id,
 	}
 
-	customFieldTypeConsulting := type_clickup.CustomFieldRequest{
+	customFieldPSHierarchy := type_clickup.CustomFieldRequest{
 		variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
 		strconv.Itoa(enum_clickup_type_consulting.STORE),
 	}
 
-	// customFieldPSTeam := type_clickup.CustomFieldRequest{
-	// 	variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID,
-	// 	strconv.Itoa(enum_clickup_ps_team.CONSULTING),
-	// }
+	customFieldPSTeam := type_clickup.CustomFieldRequest{
+		variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID,
+		strconv.Itoa(enum_clickup_ps_team.CONSULTING),
+	}
 
-	// customerOrder, err := service_clickup.RetClickUpDropDownPosition(variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
-	// 	variables_global.Customer.ClickUpCustomerList)
+	customerOrder, err := service_clickup.RetClickUpDropDownPosition(variables_global.Customer.ClickUpListId, variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+		variables_global.Customer.ClickUpCustomerList)
 
 	if err != nil {
 		fmt.Println("Error customerOrder: Contact the system administrator")
 		return
 	}
 
-	// customFieldPSCustomer := type_clickup.CustomFieldRequest{
-	// 	variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
-	// 	strconv.Itoa(customerOrder),
-	// }
+	customFieldPSCustomer := type_clickup.CustomFieldRequest{
+		variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+		strconv.Itoa(customerOrder),
+	}
 
 	customFieldsMainTask := []type_clickup.CustomFieldRequest{
 		customFieldUrlConvisoPlatform,
-		customFieldTypeConsulting,
-		// customFieldPSTeam,
-		// customFieldPSCustomer,
+		customFieldPSHierarchy,
+		customFieldPSTeam,
+		customFieldPSCustomer,
 	}
 
 	assignessTask := []int64{variables_global.Config.ConfclickUp.User}
@@ -577,8 +612,8 @@ func CreateProject() {
 			customFieldsSubTask := []type_clickup.CustomFieldRequest{
 				customFieldUrlConvisoPlatformSubTask,
 				customFieldTypeConsultingSubTask,
-				// customFieldPSTeam,
-				// customFieldPSCustomer,
+				customFieldPSTeam,
+				customFieldPSCustomer,
 			}
 
 			sanitizedHTMLTitle := ""
