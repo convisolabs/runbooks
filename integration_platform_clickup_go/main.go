@@ -8,7 +8,9 @@ import (
 	"integration_platform_clickup_go/services/service_conviso_platform"
 	"integration_platform_clickup_go/types/type_clickup"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_ps_team"
-	"integration_platform_clickup_go/types/type_enum/enum_clickup_type_consulting"
+	"integration_platform_clickup_go/types/type_enum/enum_clickup_statuses"
+	"integration_platform_clickup_go/types/type_enum/enum_clickup_type_ps_hierarchy"
+	"integration_platform_clickup_go/types/type_enum/enum_main_action"
 	"integration_platform_clickup_go/types/type_platform"
 	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
@@ -66,7 +68,6 @@ func MenuSetupConfig() {
 		}
 		switch input {
 		case 0:
-			break
 		case 1:
 			LoadProjects()
 		default:
@@ -76,8 +77,8 @@ func MenuSetupConfig() {
 }
 
 func VerifyErrorsProjectWithStore(list type_clickup.ListResponse) {
-	VerifySubtask(list, int(enum_clickup_type_consulting.EPIC), int(enum_clickup_type_consulting.STORE))
-	VerifySubtask(list, int(enum_clickup_type_consulting.STORE), int(enum_clickup_type_consulting.TASK))
+	VerifySubtask(list, int(enum_clickup_type_ps_hierarchy.EPIC), int(enum_clickup_type_ps_hierarchy.STORE))
+	VerifySubtask(list, int(enum_clickup_type_ps_hierarchy.STORE), int(enum_clickup_type_ps_hierarchy.TASK))
 	VerifyTasks(list)
 }
 
@@ -87,7 +88,7 @@ func VerifyTasks(list type_clickup.ListResponse) {
 
 	for {
 
-		tasks, err := service_clickup.ReturnTasks(list.Id, int(enum_clickup_type_consulting.TASK), page)
+		tasks, err := service_clickup.ReturnTasks(list.Id, int(enum_clickup_type_ps_hierarchy.TASK), page)
 
 		if err != nil {
 			fmt.Println("Error VerifyTasks :: ", err.Error())
@@ -179,9 +180,9 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 			}
 
 			if len(task.SubTasks) == 0 {
-				fmt.Println(enum_clickup_type_consulting.ToString(customFieldTypeConsulting),
+				fmt.Println(enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsulting),
 					" Without ",
-					enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
+					enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask),
 					" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
 					" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
 					" :: ", service_clickup.RetAssigness(task.Assignees))
@@ -200,7 +201,7 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
 			// }
 
-			if customFieldTypeConsulting == int(enum_clickup_type_consulting.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
+			if customFieldTypeConsulting == int(enum_clickup_type_ps_hierarchy.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
 				if !service_clickup.CheckTags(task.Tags, variables_global.Customer.CheckTagsValidationStory) {
 					fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", task.Url,
@@ -208,7 +209,7 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 
 				}
 
-				if task.CustomField.LinkConvisoPlatform == "" || !strings.Contains(task.CustomField.LinkConvisoPlatform, "/projects/") {
+				if task.CustomField.PSConvisoPlatformLink == "" || !strings.Contains(task.CustomField.PSConvisoPlatformLink, "/projects/") {
 					fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
 						" :: ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", task.Url,
@@ -229,9 +230,9 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 					fmt.Println(
 						subTask.Name,
 						" should be ",
-						enum_clickup_type_consulting.ToString(customFieldTypeConsultingSubTask),
+						enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask),
 						" but is ",
-						enum_clickup_type_consulting.ToString(customFieldsSubTask),
+						enum_clickup_type_ps_hierarchy.ToString(customFieldsSubTask),
 						" :: ", variables_global.Customer.IntegrationName, " :: ",
 						subTask.Name, " :: ",
 						strings.ToLower(subTask.Status.Status),
@@ -249,12 +250,39 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 
 }
 
-func UpdateProjectWithStore(list type_clickup.ListResponse) {
-	UpdateSubtask(list, enum_clickup_type_consulting.TASK, enum_clickup_type_consulting.STORE)
-	UpdateSubtask(list, enum_clickup_type_consulting.STORE, enum_clickup_type_consulting.EPIC)
+func ListStoryInProgress(list type_clickup.ListResponse) {
+	page := 0
+
+	for {
+		tasks, err := service_clickup.ReturnTasksByStatus(list.Id, enum_clickup_type_ps_hierarchy.STORE, enum_clickup_statuses.IN_PROGRESS, page)
+
+		if err != nil {
+			fmt.Println("Error ListStoryInProgress :: ", err.Error())
+			return
+		}
+
+		for i := 0; i < len(tasks.Tasks); i++ {
+			fmt.Println("Story In Progress",
+				" :: ", variables_global.Customer.IntegrationName,
+				" :: ", tasks.Tasks[i].Name,
+				" :: ", tasks.Tasks[i].Url,
+				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
+	}
 }
 
-func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
+func UpdateProjectWithStore(list type_clickup.ListResponse) {
+	UpdateTask(list, enum_clickup_type_ps_hierarchy.TASK, enum_clickup_type_ps_hierarchy.STORE)
+	UpdateTask(list, enum_clickup_type_ps_hierarchy.STORE, enum_clickup_type_ps_hierarchy.EPIC)
+}
+
+func UpdateTask(list type_clickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
 	page := 0
 
 	for {
@@ -285,6 +313,14 @@ func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeC
 
 			if err != nil {
 				fmt.Println("Error UpdateSubtask GetTask Parent :: ", err.Error())
+				continue
+			}
+
+			if taskParent.CustomField.PSProjectHierarchy != typeConsultingParent {
+				fmt.Println(
+					taskParent.Id, " :: ", taskParent.Name, " :: ", taskParent.Url,
+					" :: ", " isn't type ", enum_clickup_type_ps_hierarchy.ToString(typeConsultingParent),
+				)
 				continue
 			}
 
@@ -328,10 +364,10 @@ func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeC
 					allTaskDone = false
 				}
 
-				if taskParent.CustomField.TypeConsulting == enum_clickup_type_consulting.STORE &&
-					taskParent.CustomField.LinkConvisoPlatform != "" && convisoPlatformProject.Id == "" {
+				if taskParent.CustomField.PSProjectHierarchy == enum_clickup_type_ps_hierarchy.STORE &&
+					taskParent.CustomField.PSConvisoPlatformLink != "" && convisoPlatformProject.Id == "" {
 
-					projectId, err := service_conviso_platform.RetProjectIdCustomField(taskParent.CustomField.LinkConvisoPlatform)
+					projectId, err := service_conviso_platform.RetProjectIdCustomField(taskParent.CustomField.PSConvisoPlatformLink)
 
 					if err == nil {
 						convisoPlatformProject, err = service_conviso_platform.GetProject(projectId)
@@ -378,7 +414,7 @@ func UpdateSubtask(list type_clickup.ListResponse, typeConsultingTask int, typeC
 	}
 }
 
-func UpdateClickUpConvisoPlatform(justVerify bool) {
+func MainAction(mainAction int) {
 	fmt.Println("...Starting ClickUp Automation...")
 
 	for i := 0; i < len(variables_global.Config.Integrations); i++ {
@@ -395,15 +431,15 @@ func UpdateClickUpConvisoPlatform(justVerify bool) {
 
 		variables_global.Customer = variables_global.Config.Integrations[i]
 
-		if justVerify {
+		switch mainAction {
+		case enum_main_action.TASKS_VERIFY:
 			VerifyErrorsProjectWithStore(list)
-			//return
+		case enum_main_action.TASKS_UPDATE:
+			UpdateProjectWithStore(list)
+		case enum_main_action.TASKS_INPROGRESS:
+			ListStoryInProgress(list)
 		}
 
-		if !justVerify {
-			UpdateProjectWithStore(list)
-			//return
-		}
 		fmt.Println("Finish: ", time.Now().Format("2006-01-02 15:04:05"))
 	}
 
@@ -425,7 +461,6 @@ func MenuSearchConvisoPlatform() {
 		}
 		switch input {
 		case 0:
-			break
 		case 1:
 			service_conviso_platform.InputSearchRequimentsPlatform()
 		case 2:
@@ -539,7 +574,7 @@ func CreateProject() {
 
 	customFieldPSHierarchy := type_clickup.CustomFieldRequest{
 		variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
-		strconv.Itoa(enum_clickup_type_consulting.STORE),
+		strconv.Itoa(enum_clickup_type_ps_hierarchy.STORE),
 	}
 
 	customFieldPSTeam := type_clickup.CustomFieldRequest{
@@ -606,7 +641,7 @@ func CreateProject() {
 
 			customFieldTypeConsultingSubTask := type_clickup.CustomFieldRequest{
 				variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
-				strconv.Itoa(enum_clickup_type_consulting.TASK),
+				strconv.Itoa(enum_clickup_type_ps_hierarchy.TASK),
 			}
 
 			customFieldsSubTask := []type_clickup.CustomFieldRequest{
@@ -685,13 +720,9 @@ func main() {
 
 	SetDefaultValue()
 
-	//service_clickup.RetCustomFieldCustomerPosition()
-
-	// fmt.Println(variables_constant.CLICKUP_TOKEN_NAME + " " + os.Getenv(variables_constant.CLICKUP_TOKEN_NAME))
-	// fmt.Println(variables_constant.CONVISO_PLATFORM_TOKEN_NAME + " " + os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME))
-
-	integrationJustVerify := flag.Bool("iv", false, "Verify if clickup tasks is ok")
-	integrationUpdateTasks := flag.Bool("iu", false, "Update Conviso Platform and ClickUp Tasks")
+	integrationJustVerify := flag.Bool("tv", false, "Verify if clickup tasks is ok")
+	integrationUpdateTasks := flag.Bool("tu", false, "Update Conviso Platform and ClickUp Tasks")
+	integrationListTasksInProgress := flag.Bool("tsip", false, "List Clickup Stories In Progress")
 	deploy := flag.Bool("d", false, "See info about deploys")
 	version := flag.Bool("v", false, "Script Version")
 
@@ -705,12 +736,17 @@ func main() {
 	flag.Parse()
 
 	if *integrationJustVerify {
-		UpdateClickUpConvisoPlatform(true)
+		MainAction(enum_main_action.TASKS_VERIFY)
 		os.Exit(0)
 	}
 
 	if *integrationUpdateTasks {
-		UpdateClickUpConvisoPlatform(false)
+		MainAction(enum_main_action.TASKS_UPDATE)
+		os.Exit(0)
+	}
+
+	if *integrationListTasksInProgress {
+		MainAction(enum_main_action.TASKS_INPROGRESS)
 		os.Exit(0)
 	}
 

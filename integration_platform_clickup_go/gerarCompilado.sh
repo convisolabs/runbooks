@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="v01.00.05"
+version="v01.00.06"
 mainFileName="IntegrationPlatformClickup"
 fileNameCompact=""
 auxFileName=""

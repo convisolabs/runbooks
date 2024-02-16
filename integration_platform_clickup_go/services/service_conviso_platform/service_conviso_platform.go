@@ -12,7 +12,6 @@ import (
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -270,14 +269,6 @@ const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_FINISH = `
 	}
 `
 
-// const CONVISO_PLATFORM_PROJECT_CREATE = `
-// 	mutation UpdateActivityStatusToStart($input:Int!)
-// 	{
-// 		updateActivityStatusToFinish(input: { activityId: 1 }) {
-// 		input: $input
-// 		)
-// `
-
 func RetDeploys() {
 	var result type_platform.DeployTypeResponse
 
@@ -314,7 +305,7 @@ func RetDeploys() {
 			fmt.Println("Error RetDeploys ClientDo: ", err.Error())
 			return
 		}
-		data, _ := ioutil.ReadAll(resp.Body)
+		data, _ := io.ReadAll(resp.Body)
 
 		json.Unmarshal([]byte(string(data)), &result)
 		for i := 0; i < len(result.Data.DeployTypeData.Collection); i++ {
@@ -440,7 +431,7 @@ func SearchProjectTypesPlatform(tpSearch string) {
 			fmt.Println("Error SearchProjectTypesPlatform ClientDo: ", err.Error())
 			return
 		}
-		data, _ := ioutil.ReadAll(resp.Body)
+		data, _ := io.ReadAll(resp.Body)
 
 		json.Unmarshal([]byte(string(data)), &result)
 		for i := 0; i < len(result.Data.ProjectTypes.Collection); i++ {
@@ -466,13 +457,11 @@ func SearchProjectTypesPlatform(tpSearch string) {
 }
 
 func InputSearchProjectTypesPlatform() {
-	//fmt.Print("Enter part of the project type: ")
 	tpSearch := functions.GetTextWithSpace("Enter part of the project type: ")
 	SearchProjectTypesPlatform(tpSearch)
 }
 
 func InputSearchRequimentsPlatform() {
-	//fmt.Print("Enter part of the requirement: ")
 	reqSearch := functions.GetTextWithSpace("Enter part of the requirement: ")
 	SearchRequimentsPlatform(reqSearch)
 }
@@ -503,7 +492,7 @@ func ConfirmProjectCreate(companyId int, label string) (type_platform.ProjectCol
 	if err != nil {
 		return type_platform.ProjectCollectionResponse{}, errors.New("Error ConfirmProjectCreate ClientDo " + err.Error())
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	json.Unmarshal([]byte(string(data)), &result)
 
@@ -575,7 +564,7 @@ func AddPlatformProject(inputParameters type_platform.ProjectCreateInputRequest)
 		return errors.New("Error AddPlatformProject ClientDo: " + err.Error())
 	}
 
-	ioutil.ReadAll(resp.Body)
+	io.ReadAll(resp.Body)
 
 	return nil
 }
@@ -662,7 +651,7 @@ func RetProjectIdCustomField(text string) (int, error) {
 
 func UpdateActivityRequirement(task type_clickup.TaskResponse, project type_platform.Project) error {
 	if project.Id != "" {
-		activityId, error := RetActivityIdCustomField(task.CustomField.LinkConvisoPlatform)
+		activityId, error := RetActivityIdCustomField(task.CustomField.PSConvisoPlatformLink)
 
 		if error == nil {
 			idxActivity := slices.IndexFunc(project.Activities, func(a type_platform.ActivityCollectionResponse) bool { return a.Id == strconv.Itoa(activityId) })
