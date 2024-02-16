@@ -23,11 +23,10 @@ type TaskStatusResponse struct {
 }
 
 type CustomFieldCustomized struct {
-	TypeConsulting      int
-	Customer            string
-	LinkConvisoPlatform string
-	//Team                []string
-	Team string
+	PSProjectHierarchy    int
+	PSCustomer            string
+	PSConvisoPlatformLink string
+	PSTeam                string
 }
 
 type TaskResponse struct {

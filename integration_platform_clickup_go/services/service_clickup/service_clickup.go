@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/types/type_enum/enum_clickup_ps_team"
 	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
@@ -90,35 +91,35 @@ func RetCustomFieldUrlConviso(customFields []type_clickup.CustomField) string {
 	return ""
 }
 
-// func RetCustomFieldPSTeam(customFields []type_clickup.CustomField) string {
-// 	for i := 0; i < len(customFields); i++ {
-// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
-// 			if customFields[i].Value == nil {
-// 				return ""
-// 			} else {
-// 				return enum_clickup_ps_team.ToString(int(customFields[i].Value.(float64)))
-// 			}
-// 		}
-// 	}
-// 	return ""
-// }
+func RetCustomFieldPSTeam(customFields []type_clickup.CustomField) string {
+	for i := 0; i < len(customFields); i++ {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+			if customFields[i].Value == nil {
+				return ""
+			} else {
+				return enum_clickup_ps_team.ToString(int(customFields[i].Value.(float64)))
+			}
+		}
+	}
+	return ""
+}
 
-// func RetCustomFieldPSCustomer(customFields []type_clickup.CustomField) string {
-// 	for i := 0; i < len(customFields); i++ {
-// 		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID {
-// 			if customFields[i].Value == nil {
-// 				return ""
-// 			} else {
-// 				if len(customFields[i].TypeConfig.Options) > int(customFields[i].Value.(float64)) {
-// 					return customFields[i].TypeConfig.Options[int(customFields[i].Value.(float64))].Name
-// 				} else {
-// 					return ""
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return ""
-// }
+func RetCustomFieldPSCustomer(customFields []type_clickup.CustomField) string {
+	for i := 0; i < len(customFields); i++ {
+		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID {
+			if customFields[i].Value == nil {
+				return ""
+			} else {
+				if len(customFields[i].TypeConfig.Options) > int(customFields[i].Value.(float64)) {
+					return customFields[i].TypeConfig.Options[int(customFields[i].Value.(float64))].Name
+				} else {
+					return ""
+				}
+			}
+		}
+	}
+	return ""
+}
 
 func RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
@@ -251,26 +252,41 @@ func ReturnTasks(listId string, taskType int, page int) (type_clickup.TasksRespo
 	return resultTasks, nil
 }
 
-// func ReturnLists() (type_clickup.ListsResponse, error) {
-// 	var result type_clickup.ListsResponse
+func ReturnTasksByStatus(listId string, taskType int, taskStatuses string, page int) (type_clickup.TasksResponse, error) {
+	var resultTasks type_clickup.TasksResponse
+	var urlGetTasks bytes.Buffer
 
-// 	var urlGetLists bytes.Buffer
-// 	urlGetLists.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-// 	urlGetLists.WriteString("/folder/")
-// 	urlGetLists.WriteString(variables_constant.CLICKUP_FOLDER_CONSULTING_ID)
-// 	urlGetLists.WriteString("/list?archived=false")
+	intTaskType := strconv.FormatInt(int64(taskType), 10)
+	strPage := strconv.FormatInt(int64(page), 10)
 
-// 	request, err := functions.HttpRequestRetry(http.MethodGet, urlGetLists.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
-// 	if err != nil {
-// 		return result, errors.New("Error ReturnLists: " + err.Error())
-// 	}
+	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
+	urlGetTasks.WriteString("list/")
+	urlGetTasks.WriteString(listId)
+	urlGetTasks.WriteString("/task?custom_fields=[")
+	urlGetTasks.WriteString("{\"field_id\":\"")
+	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
+	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
+	urlGetTasks.WriteString(intTaskType)
+	urlGetTasks.WriteString("\"}")
+	urlGetTasks.WriteString("]")
+	urlGetTasks.WriteString("&subtasks=true")
+	urlGetTasks.WriteString("&page=")
+	urlGetTasks.WriteString(strPage)
+	urlGetTasks.WriteString("&statuses[]=")
+	urlGetTasks.WriteString(taskStatuses)
 
-// 	data, _ := io.ReadAll(request.Body)
+	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
-// 	json.Unmarshal([]byte(string(data)), &result)
+	if err != nil {
+		return resultTasks, errors.New("Error ReturnTasks: " + err.Error())
+	}
 
-// 	return result, nil
-// }
+	data, _ := io.ReadAll(response.Body)
+
+	json.Unmarshal([]byte(string(data)), &resultTasks)
+
+	return resultTasks, nil
+}
 
 func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	var task type_clickup.TaskResponse
@@ -290,10 +306,10 @@ func ReturnTask(taskId string) (type_clickup.TaskResponse, error) {
 	json.Unmarshal([]byte(string(data)), &task)
 
 	//add customFields
-	task.CustomField.TypeConsulting = RetCustomFieldTypeConsulting(task.CustomFields)
-	task.CustomField.LinkConvisoPlatform = RetCustomFieldUrlConviso(task.CustomFields)
-	// task.CustomField.Team = RetCustomFieldPSTeam(task.CustomFields)
-	// task.CustomField.Customer = RetCustomFieldPSCustomer(task.CustomFields)
+	task.CustomField.PSProjectHierarchy = RetCustomFieldTypeConsulting(task.CustomFields)
+	task.CustomField.PSConvisoPlatformLink = RetCustomFieldUrlConviso(task.CustomFields)
+	task.CustomField.PSTeam = RetCustomFieldPSTeam(task.CustomFields)
+	task.CustomField.PSCustomer = RetCustomFieldPSCustomer(task.CustomFields)
 
 	return task, nil
 }
