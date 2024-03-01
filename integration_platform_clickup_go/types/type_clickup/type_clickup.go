@@ -115,3 +115,12 @@ type CustomFieldOptions struct {
 	Color      string `json:"color"`
 	OrderIndex int    `json:"orderindex"`
 }
+
+type SearchTask struct {
+	TaskType      int
+	Page          int
+	DateUpdatedGt int64
+	IncludeClosed bool
+	SubTasks      bool
+	TaskStatuses  string
+}

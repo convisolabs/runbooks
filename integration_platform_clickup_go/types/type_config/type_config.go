@@ -6,6 +6,7 @@ type ConfigTypeIntegration struct {
 	ClickUpListId            string `yaml:"clickuplistid"`
 	ClickUpCustomerList      string `yaml:"clickupcustomerlist"`
 	CheckTagsValidationStory string `yaml:"checkTagsValidationStory"`
+	AssetNewFortify          *bool  `yaml:"assetNewFortify"`
 }
 
 type ConfigTypeClickup struct {

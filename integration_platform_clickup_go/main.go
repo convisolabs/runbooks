@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"integration_platform_clickup_go/services/service_clickup"
 	"integration_platform_clickup_go/services/service_conviso_platform"
+	"integration_platform_clickup_go/services/service_crawler"
 	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_ps_team"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_statuses"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_type_ps_hierarchy"
@@ -88,7 +90,16 @@ func VerifyTasks(list type_clickup.ListResponse) {
 
 	for {
 
-		tasks, err := service_clickup.ReturnTasks(list.Id, int(enum_clickup_type_ps_hierarchy.TASK), page)
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      int(enum_clickup_type_ps_hierarchy.TASK),
+				Page:          page,
+				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
+				IncludeClosed: false,
+				SubTasks:      true,
+				TaskStatuses:  "",
+			},
+		)
 
 		if err != nil {
 			fmt.Println("Error VerifyTasks :: ", err.Error())
@@ -164,7 +175,16 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 
 	for {
 
-		tasks, err := service_clickup.ReturnTasks(list.Id, customFieldTypeConsulting, page)
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      customFieldTypeConsulting,
+				Page:          page,
+				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
+				IncludeClosed: false,
+				SubTasks:      true,
+				TaskStatuses:  "",
+			},
+		)
 
 		if err != nil {
 			fmt.Println("Error VerifySubtask :: ", err.Error())
@@ -177,6 +197,14 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 			if err != nil {
 				fmt.Println("Error VerifySubtask GetTask :: ", err.Error())
 				return
+			}
+
+			if strings.EqualFold(task.Parent, "") && customFieldTypeConsulting != int(enum_clickup_type_ps_hierarchy.EPIC) {
+				fmt.Println("Store  Without EPIC",
+					" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
+					" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
+					" :: ", service_clickup.RetAssigness(task.Assignees))
+				continue
 			}
 
 			if len(task.SubTasks) == 0 {
@@ -254,7 +282,16 @@ func ListStoryInProgress(list type_clickup.ListResponse) {
 	page := 0
 
 	for {
-		tasks, err := service_clickup.ReturnTasksByStatus(list.Id, enum_clickup_type_ps_hierarchy.STORE, enum_clickup_statuses.IN_PROGRESS, page)
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      enum_clickup_type_ps_hierarchy.STORE,
+				Page:          page,
+				DateUpdatedGt: 0,
+				IncludeClosed: false,
+				SubTasks:      true,
+				TaskStatuses:  enum_clickup_statuses.IN_PROGRESS,
+			},
+		)
 
 		if err != nil {
 			fmt.Println("Error ListStoryInProgress :: ", err.Error())
@@ -263,6 +300,48 @@ func ListStoryInProgress(list type_clickup.ListResponse) {
 
 		for i := 0; i < len(tasks.Tasks); i++ {
 			fmt.Println("Story In Progress",
+				" :: ", variables_global.Customer.IntegrationName,
+				" :: ", tasks.Tasks[i].Name,
+				" :: ", tasks.Tasks[i].Url,
+				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
+	}
+}
+
+func ListTasksInClosed(list type_clickup.ListResponse) {
+	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
+	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
+	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
+}
+
+func ListTasksInClosedByPSHierarchy(list type_clickup.ListResponse, psHierarchy int) {
+	page := 0
+
+	for {
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      psHierarchy,
+				Page:          page,
+				DateUpdatedGt: time.Now().Add(-time.Hour * 60).UTC().UnixMilli(),
+				IncludeClosed: true,
+				SubTasks:      true,
+				TaskStatuses:  "closed",
+			},
+		)
+
+		if err != nil {
+			fmt.Println("Error ListTasksInClosedByPSHierarchy :: ", err.Error())
+			return
+		}
+
+		for i := 0; i < len(tasks.Tasks); i++ {
+			fmt.Println(enum_clickup_type_ps_hierarchy.ToString(psHierarchy), " Closed ",
 				" :: ", variables_global.Customer.IntegrationName,
 				" :: ", tasks.Tasks[i].Name,
 				" :: ", tasks.Tasks[i].Url,
@@ -287,7 +366,16 @@ func UpdateTask(list type_clickup.ListResponse, typeConsultingTask int, typeCons
 
 	for {
 
-		tasks, err := service_clickup.ReturnTasks(list.Id, typeConsultingTask, page)
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      typeConsultingTask,
+				Page:          page,
+				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
+				IncludeClosed: false,
+				SubTasks:      true,
+				TaskStatuses:  "",
+			},
+		)
 
 		if err != nil {
 			fmt.Println("Error UpdateSubtask :: ", err.Error())
@@ -434,10 +522,20 @@ func MainAction(mainAction int) {
 		switch mainAction {
 		case enum_main_action.TASKS_VERIFY:
 			VerifyErrorsProjectWithStore(list)
+
 		case enum_main_action.TASKS_UPDATE:
 			UpdateProjectWithStore(list)
+
 		case enum_main_action.TASKS_INPROGRESS:
 			ListStoryInProgress(list)
+
+		case enum_main_action.TASKS_INCLOSED:
+			ListTasksInClosed(list)
+
+		case enum_main_action.ASSETS_NEW_CP_FORTIFY:
+			if variables_global.Customer.AssetNewFortify != nil && *variables_global.Customer.AssetNewFortify {
+				AssetsNew(variables_global.Customer)
+			}
 		}
 
 		fmt.Println("Finish: ", time.Now().Format("2006-01-02 15:04:05"))
@@ -677,6 +775,26 @@ func CreateProject() {
 	fmt.Println("Create Task Success!")
 }
 
+func AssetsNew(integration type_config.ConfigTypeIntegration) {
+	var urlBase bytes.Buffer
+
+	urlBase.WriteString(variables_constant.CONVISO_PLATFORM_URL_BASE)
+	urlBase.WriteString("scopes/")
+	urlBase.WriteString(strconv.Itoa(integration.PlatformID))
+	urlBase.WriteString("/integrations/fortify/select_projects?page={1}")
+
+	page := 1
+
+	for {
+		urlPage := strings.Replace(urlBase.String(), "{1}", strconv.Itoa(page), -1)
+		cont := service_crawler.Exec(integration.PlatformID, urlPage)
+		if !cont {
+			break
+		}
+		page++
+	}
+}
+
 func InitialCheck() bool {
 	ret := true
 
@@ -710,6 +828,14 @@ func SetDefaultValue() {
 }
 
 func main() {
+	/*
+		TODO LIST
+			verificar status e customer
+			separar as atualizações do cp e clickup, hoje tem uma variável, has update, mas deveria ter algo do tipo hasupdate cp e hasupcate clickup
+			Verificar o status do conviso platform x clickup e atualizar o CP exemplo está in progress no Clickup e no CP planned https://app.convisoappsec.com/spa/scopes/413/projects/19138?locale=en
+			atualizar tarefas done to closed
+			qdo não encontrar um cliente no campo PS Customer, não quebrar a aplicação, selecionar o primeiro da lista ou algo assim
+	*/
 
 	if !InitialCheck() {
 		fmt.Println("You need to correct the above information before rerunning the application")
@@ -723,6 +849,9 @@ func main() {
 	integrationJustVerify := flag.Bool("tv", false, "Verify if clickup tasks is ok")
 	integrationUpdateTasks := flag.Bool("tu", false, "Update Conviso Platform and ClickUp Tasks")
 	integrationListTasksInProgress := flag.Bool("tsip", false, "List Clickup Stories In Progress")
+	integrationListTasksClosed := flag.Bool("tsd", false, "List Clickup Epics, Stories and Tasks in Closed")
+	crawlerAssetNewCP := flag.Bool("can", false, "Search New Assets Fortify Integration Conviso Platform")
+	// integrationUpdateTasksDone := flag.Bool("tsip", false, "Change tasks done to closed")
 	deploy := flag.Bool("d", false, "See info about deploys")
 	version := flag.Bool("v", false, "Script Version")
 
@@ -747,6 +876,16 @@ func main() {
 
 	if *integrationListTasksInProgress {
 		MainAction(enum_main_action.TASKS_INPROGRESS)
+		os.Exit(0)
+	}
+
+	if *integrationListTasksClosed {
+		MainAction(enum_main_action.TASKS_INCLOSED)
+		os.Exit(0)
+	}
+
+	if *crawlerAssetNewCP {
+		MainAction(enum_main_action.ASSETS_NEW_CP_FORTIFY)
 		os.Exit(0)
 	}
 

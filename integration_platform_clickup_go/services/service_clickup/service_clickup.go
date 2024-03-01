@@ -215,12 +215,9 @@ func VerifyTasks(taskEpic type_clickup.TaskResponse) error {
 	return nil
 }
 
-func ReturnTasks(listId string, taskType int, page int) (type_clickup.TasksResponse, error) {
+func ReturnTasks(listId string, searchTasks type_clickup.SearchTask) (type_clickup.TasksResponse, error) {
 	var resultTasks type_clickup.TasksResponse
 	var urlGetTasks bytes.Buffer
-
-	intTaskType := strconv.FormatInt(int64(taskType), 10)
-	strPage := strconv.FormatInt(int64(page), 10)
 
 	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
 	urlGetTasks.WriteString("list/")
@@ -229,51 +226,30 @@ func ReturnTasks(listId string, taskType int, page int) (type_clickup.TasksRespo
 	urlGetTasks.WriteString("{\"field_id\":\"")
 	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
 	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
-	urlGetTasks.WriteString(intTaskType)
+	urlGetTasks.WriteString(strconv.FormatInt(int64(searchTasks.TaskType), 10))
 	urlGetTasks.WriteString("\"}")
 	urlGetTasks.WriteString("]")
-	urlGetTasks.WriteString("&include_closed=true")
-	urlGetTasks.WriteString("&date_updated_gt=")
-	urlGetTasks.WriteString(strconv.FormatInt(time.Now().Add(-time.Hour*240).UTC().UnixMilli(), 10))
-	urlGetTasks.WriteString("&subtasks=true")
-	urlGetTasks.WriteString("&page=")
-	urlGetTasks.WriteString(strPage)
 
-	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
-
-	if err != nil {
-		return resultTasks, errors.New("Error ReturnTasks: " + err.Error())
+	if searchTasks.IncludeClosed {
+		urlGetTasks.WriteString("&include_closed=true")
 	}
 
-	data, _ := io.ReadAll(response.Body)
+	if searchTasks.DateUpdatedGt > 0 {
+		urlGetTasks.WriteString("&date_updated_gt=")
+		urlGetTasks.WriteString(strconv.FormatInt(searchTasks.DateUpdatedGt, 10))
+	}
 
-	json.Unmarshal([]byte(string(data)), &resultTasks)
+	if searchTasks.SubTasks {
+		urlGetTasks.WriteString("&subtasks=true")
+	}
 
-	return resultTasks, nil
-}
+	if !strings.EqualFold(searchTasks.TaskStatuses, "") {
+		urlGetTasks.WriteString("&statuses[]=")
+		urlGetTasks.WriteString(searchTasks.TaskStatuses)
+	}
 
-func ReturnTasksByStatus(listId string, taskType int, taskStatuses string, page int) (type_clickup.TasksResponse, error) {
-	var resultTasks type_clickup.TasksResponse
-	var urlGetTasks bytes.Buffer
-
-	intTaskType := strconv.FormatInt(int64(taskType), 10)
-	strPage := strconv.FormatInt(int64(page), 10)
-
-	urlGetTasks.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-	urlGetTasks.WriteString("list/")
-	urlGetTasks.WriteString(listId)
-	urlGetTasks.WriteString("/task?custom_fields=[")
-	urlGetTasks.WriteString("{\"field_id\":\"")
-	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
-	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
-	urlGetTasks.WriteString(intTaskType)
-	urlGetTasks.WriteString("\"}")
-	urlGetTasks.WriteString("]")
-	urlGetTasks.WriteString("&subtasks=true")
 	urlGetTasks.WriteString("&page=")
-	urlGetTasks.WriteString(strPage)
-	urlGetTasks.WriteString("&statuses[]=")
-	urlGetTasks.WriteString(taskStatuses)
+	urlGetTasks.WriteString(strconv.FormatInt(int64(searchTasks.Page), 10))
 
 	response, err := functions.HttpRequestRetry(http.MethodGet, urlGetTasks.String(), globalClickupHeaders, nil, *variables_global.Config.ConfclickUp.HttpAttempt)
 
