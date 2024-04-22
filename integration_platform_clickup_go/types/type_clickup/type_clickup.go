@@ -27,6 +27,7 @@ type CustomFieldCustomized struct {
 	PSCustomer            string
 	PSConvisoPlatformLink string
 	PSTeam                string
+	PSDeliveryPoints      string
 }
 
 type TaskResponse struct {
@@ -61,6 +62,10 @@ type TaskRequest struct {
 	Status       string `json:"status"`
 }
 
+type TaskRequestStatus struct {
+	Status string `json:"status"`
+}
+
 type TaskRequestStore struct {
 	StartDate int64  `json:"start_date"`
 	DueDate   int64  `json:"due_date"`
@@ -89,6 +94,10 @@ type CustomFieldRequest struct {
 	Value interface{} `json:"value"`
 }
 
+type CustomFieldValueRequest struct {
+	Value string `json:"value"`
+}
+
 type CustomFieldsResponse struct {
 	Fields []CustomField `json:"fields"`
 }
@@ -114,4 +123,13 @@ type CustomFieldOptions struct {
 	Name       string `json:"name"`
 	Color      string `json:"color"`
 	OrderIndex int    `json:"orderindex"`
+}
+
+type SearchTask struct {
+	TaskType      int
+	Page          int
+	DateUpdatedGt int64
+	IncludeClosed bool
+	SubTasks      bool
+	TaskStatuses  string
 }

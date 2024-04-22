@@ -1,9 +1,13 @@
 #!/bin/bash
 
-version="v01.00.06"
+version="v02.00.00"
 mainFileName="IntegrationPlatformClickup"
 fileNameCompact=""
 auxFileName=""
+
+echo "Limpando database"
+echo "delete from assets;" | sqlite3 db/db.db
+
 
 echo "Gerando Windows - AMD64"
 auxFileName=$mainFileName".exe"
