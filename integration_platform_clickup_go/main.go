@@ -114,50 +114,52 @@ func VerifyTasks(list type_clickup.ListResponse) {
 				return
 			}
 
-			if strings.ToLower(task.Status.Status) != "backlog" && strings.ToLower(task.Status.Status) != "closed" {
+			if strings.ToLower(task.Status.Status) != "backlog" &&
+				strings.ToLower(task.Status.Status) != "closed" &&
+				!service_clickup.CheckSpecificTag(task.Tags, "não executada") {
 
 				if task.Parent == "" {
-					fmt.Println("TASK Without Store", " :: ", list.Name, " :: ", tasks.Tasks[i].Name, " :: ",
-						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", tasks.Tasks[i].Url,
-						" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+					fmt.Println("TASK Without Store", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
 					continue
 				}
 
 				if task.DueDate == "" {
-					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
 						" :: ", service_clickup.RetAssigness(task.Assignees))
 				}
 
 				if task.StartDate == "" {
-					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
 						" :: ", service_clickup.RetAssigness(task.Assignees))
 				}
 
 				if task.TimeEstimate == 0 {
-					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
 						" :: ", service_clickup.RetAssigness(task.Assignees))
 				}
 
 				if task.Status.Status == "done" && task.TimeSpent == 0 {
-					fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
 						" :: ", service_clickup.RetAssigness(task.Assignees))
 				}
 
-				// if len(task.CustomField.Team) == 0 {
-				// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-				// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Team empty", " :: ", task.Url,
-				// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-				// }
+				if len(task.CustomField.PSTeam) == 0 {
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "PS-Team empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
 
-				// if len(task.CustomField.Customer) == 0 {
-				// 	fmt.Println("Task with errors: ", task.List.Name, " - ", task.Name, " - ", task.Name, " :: ",
-				// 		strings.ToLower(tasks.Tasks[i].Status.Status), " :: ", "Customer empty", " :: ", task.Url,
-				// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-				// }
+				if variables_global.Customer.ValidatePSCustomer && len(task.CustomField.PSCustomer) == 0 {
+					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
+						strings.ToLower(task.Status.Status), " :: ", "PS-Customer empty", " :: ", task.Url,
+						" :: ", service_clickup.RetAssigness(task.Assignees))
+				}
 			}
 		}
 
@@ -217,27 +219,27 @@ func VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int
 				continue
 			}
 
-			// if len(task.CustomField.Team) == 0 {
-			// 	fmt.Println("EPIC or Story without TEAM: ", list.Name, " :: ", task.Name, " :: ",
-			// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
-			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-			// }
+			if len(task.CustomField.PSTeam) == 0 {
+				fmt.Println("EPIC or Story without PS-TEAM: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
+					strings.ToLower(task.Status.Status), " :: ", task.Url,
+					" :: ", service_clickup.RetAssigness(task.Assignees))
+			}
 
-			// if len(task.CustomField.Customer) == 0 {
-			// 	fmt.Println("EPIC or Story without Customer: ", list.Name, " :: ", task.Name, " :: ",
-			// 		strings.ToLower(task.Status.Status), " :: ", task.Url,
-			// 		" :: ", service_clickup.RetAssigness(task.Assignees))
-			// }
+			if variables_global.Customer.ValidatePSCustomer && len(task.CustomField.PSCustomer) == 0 {
+				fmt.Println("EPIC or Story without PS-Customer: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
+					strings.ToLower(task.Status.Status), " :: ", task.Url,
+					" :: ", service_clickup.RetAssigness(task.Assignees))
+			}
 
-			if customFieldTypeConsulting == int(enum_clickup_type_ps_hierarchy.STORE) && variables_global.Customer.CheckTagsValidationStory != "" {
-				if !service_clickup.CheckTags(task.Tags, variables_global.Customer.CheckTagsValidationStory) {
+			if customFieldTypeConsulting == int(enum_clickup_type_ps_hierarchy.STORE) && variables_global.Customer.ValidateTag {
+				if !service_clickup.CheckTags(task.Tags) {
 					fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", task.Url,
 						" :: ", service_clickup.RetAssigness(task.Assignees))
 
 				}
 
-				if task.CustomField.PSConvisoPlatformLink == "" || !strings.Contains(task.CustomField.PSConvisoPlatformLink, "/projects/") {
+				if variables_global.Customer.ValidatePSConvisoPlatformLink && (task.CustomField.PSConvisoPlatformLink == "" || !strings.Contains(task.CustomField.PSConvisoPlatformLink, "/projects/")) {
 					fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
 						" :: ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", task.Url,
@@ -299,11 +301,27 @@ func ListStoryInProgress(list type_clickup.ListResponse) {
 		}
 
 		for i := 0; i < len(tasks.Tasks); i++ {
+
+			var dtStart time.Time
+			var dtDuoDate time.Time
+
+			dtIntAux, err := strconv.ParseInt(tasks.Tasks[i].StartDate, 10, 64)
+			if err == nil {
+				dtStart = time.UnixMilli(dtIntAux)
+			}
+
+			dtIntAux, err = strconv.ParseInt(tasks.Tasks[i].DueDate, 10, 64)
+			if err == nil {
+				dtDuoDate = time.UnixMilli(dtIntAux)
+			}
+
 			fmt.Println("Story In Progress",
-				" :: ", variables_global.Customer.IntegrationName,
-				" :: ", tasks.Tasks[i].Name,
-				" :: ", tasks.Tasks[i].Url,
-				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
+				";", variables_global.Customer.IntegrationName,
+				";", tasks.Tasks[i].Name,
+				";", tasks.Tasks[i].Url,
+				";", dtStart.Format("02/01/2006"),
+				";", dtDuoDate.Format("02/01/2006"),
+				";", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
 		}
 
 		if tasks.LastPage {
@@ -318,6 +336,51 @@ func ListTasksInClosed(list type_clickup.ListResponse) {
 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
+}
+
+func UpdateTasksInDoneToClosed(list type_clickup.ListResponse) {
+	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
+	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
+	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
+}
+
+func UpdateTasksInDoneToClosedPSHierarchy(list type_clickup.ListResponse, psHierarchy int) {
+	page := 0
+
+	for {
+		tasks, err := service_clickup.ReturnTasks(list.Id,
+			type_clickup.SearchTask{
+				TaskType:      psHierarchy,
+				Page:          page,
+				DateUpdatedGt: 0,
+				IncludeClosed: false,
+				SubTasks:      true,
+				TaskStatuses:  "done",
+			},
+		)
+
+		if err != nil {
+			fmt.Println("Error UpdateTasksInDoneToClosedPSHierarchy :: ", err.Error())
+			return
+		}
+
+		for i := 0; i < len(tasks.Tasks); i++ {
+			err = service_clickup.RequestPutTaskStatus(tasks.Tasks[i].Id, type_clickup.TaskRequestStatus{
+				Status: "closed",
+			})
+
+			if err != nil {
+				fmt.Println("Error UpdateTasksInDoneToClosedPSHierarchy :: ", tasks.Tasks[i].Url, " :: ", err.Error())
+				return
+			}
+		}
+
+		if tasks.LastPage {
+			break
+		}
+
+		page++
+	}
 }
 
 func ListTasksInClosedByPSHierarchy(list type_clickup.ListResponse, psHierarchy int) {
@@ -492,6 +555,25 @@ func UpdateTask(list type_clickup.ListResponse, typeConsultingTask int, typeCons
 					}
 				}
 			}
+
+			if taskParent.CustomField.PSProjectHierarchy == enum_clickup_type_ps_hierarchy.STORE && variables_global.Customer.ValidateTag {
+				deliveryPoint := service_clickup.RetDeliveryPointTag(taskParent.Tags)
+				deliveruPointString := strconv.Itoa(deliveryPoint)
+				if deliveryPoint != 0 && !strings.EqualFold(deliveruPointString, taskParent.CustomField.PSDeliveryPoints) {
+
+					err = service_clickup.RequestSetValueCustomField(taskParent.Id,
+						variables_constant.CLICKUP_CUSTOM_FIELD_PS_DELIVERY_POINTS,
+						type_clickup.CustomFieldValueRequest{
+							deliveruPointString,
+						},
+					)
+
+					if err != nil {
+						fmt.Println("Store not possible update delivery points")
+					}
+
+				}
+			}
 		}
 
 		if tasks.LastPage {
@@ -533,9 +615,12 @@ func MainAction(mainAction int) {
 			ListTasksInClosed(list)
 
 		case enum_main_action.ASSETS_NEW_CP_FORTIFY:
-			if variables_global.Customer.AssetNewFortify != nil && *variables_global.Customer.AssetNewFortify {
+			if variables_global.Customer.AssetNewFortify {
 				AssetsNew(variables_global.Customer)
 			}
+		case enum_main_action.TASKS_UPDATE_DONE_CLOSED:
+			UpdateTasksInDoneToClosed(list)
+
 		}
 
 		fmt.Println("Finish: ", time.Now().Format("2006-01-02 15:04:05"))
@@ -830,11 +915,11 @@ func SetDefaultValue() {
 func main() {
 	/*
 		TODO LIST
-			verificar status e customer
+			remover gambiarra verificar CP criou projeto
 			separar as atualizações do cp e clickup, hoje tem uma variável, has update, mas deveria ter algo do tipo hasupdate cp e hasupcate clickup
-			Verificar o status do conviso platform x clickup e atualizar o CP exemplo está in progress no Clickup e no CP planned https://app.convisoappsec.com/spa/scopes/413/projects/19138?locale=en
-			atualizar tarefas done to closed
+			atualizar tarefas done to closed (feito)
 			qdo não encontrar um cliente no campo PS Customer, não quebrar a aplicação, selecionar o primeiro da lista ou algo assim
+			verificar possibilidade de melhorar a função de recuperar o customfield do clickup na função returntask
 	*/
 
 	if !InitialCheck() {
@@ -851,7 +936,7 @@ func main() {
 	integrationListTasksInProgress := flag.Bool("tsip", false, "List Clickup Stories In Progress")
 	integrationListTasksClosed := flag.Bool("tsd", false, "List Clickup Epics, Stories and Tasks in Closed")
 	crawlerAssetNewCP := flag.Bool("can", false, "Search New Assets Fortify Integration Conviso Platform")
-	// integrationUpdateTasksDone := flag.Bool("tsip", false, "Change tasks done to closed")
+	integrationUpdateTasksDone := flag.Bool("tud", false, "Change tasks done to closed")
 	deploy := flag.Bool("d", false, "See info about deploys")
 	version := flag.Bool("v", false, "Script Version")
 
@@ -886,6 +971,11 @@ func main() {
 
 	if *crawlerAssetNewCP {
 		MainAction(enum_main_action.ASSETS_NEW_CP_FORTIFY)
+		os.Exit(0)
+	}
+
+	if *integrationUpdateTasksDone {
+		MainAction(enum_main_action.TASKS_UPDATE_DONE_CLOSED)
 		os.Exit(0)
 	}
 
