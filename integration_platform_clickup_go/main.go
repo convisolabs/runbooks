@@ -25,6 +25,7 @@ import (
 
 	"github.com/jaytaylor/html2text"
 	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
 )
 
 const BANNER = `
@@ -669,6 +670,7 @@ func MainMenu() {
 		fmt.Println("1 - Menu Setup")
 		fmt.Println("2 - Create Project Conviso Platform/ClickUp")
 		fmt.Println("3 - Menu Search Conviso Platform")
+		fmt.Println("4 - Save Yaml File Test")
 
 		fmt.Print("Enter the option: ")
 		n, err := fmt.Scan(&input)
@@ -691,9 +693,23 @@ func MainMenu() {
 			}
 		case 3:
 			MenuSearchConvisoPlatform()
+		case 4:
+			SaveYamlFileTest()
 		default:
 			fmt.Println("Invalid Input")
 		}
+	}
+}
+
+func SaveYamlFileTest() {
+	fileName := "test.yaml"
+	yamlData, err := yaml.Marshal(&variables_global.Config)
+	if err != nil {
+		fmt.Printf("Error while Marshaling. %v", err)
+	}
+	err = os.WriteFile(fileName, yamlData, 0644)
+	if err != nil {
+		panic("Unable to write data into the file")
 	}
 }
 
@@ -917,7 +933,7 @@ func main() {
 		TODO LIST
 			remover gambiarra verificar CP criou projeto
 			separar as atualizações do cp e clickup, hoje tem uma variável, has update, mas deveria ter algo do tipo hasupdate cp e hasupcate clickup
-			atualizar tarefas done to closed (feito)
+			Verificar o status do conviso platform x clickup e atualizar o CP exemplo está in progress no Clickup e no CP planned https://app.convisoappsec.com/spa/scopes/413/projects/19138?locale=en
 			qdo não encontrar um cliente no campo PS Customer, não quebrar a aplicação, selecionar o primeiro da lista ou algo assim
 			verificar possibilidade de melhorar a função de recuperar o customfield do clickup na função returntask
 	*/
