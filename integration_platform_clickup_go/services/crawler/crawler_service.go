@@ -1,9 +1,9 @@
-package service_crawler
+package crawler_service
 
 import (
 	"fmt"
 	"integration_platform_clickup_go/repositories/repository_assets"
-	"integration_platform_clickup_go/services/service_slack"
+	slack_service "integration_platform_clickup_go/services/slack"
 	"integration_platform_clickup_go/types/type_repository"
 	"integration_platform_clickup_go/types/type_slack"
 	"integration_platform_clickup_go/utils/variables_constant"
@@ -16,9 +16,24 @@ import (
 	"github.com/google/uuid"
 )
 
-func Exec(company int, url string) bool {
+type CrawlerService struct {
+	slackService slack_service.ISlackService
+}
+
+func CrawlerServiceNew(slackService slack_service.ISlackService) ICrawlerService {
+	return &CrawlerService{slackService: slackService}
+}
+
+func (f *CrawlerService) Exec(company int, url string) bool {
 
 	ret := true
+
+	f.slackService.RequestPostMessage(
+		type_slack.PostMessage{
+			Channel: variables_constant.SLACK_CHANNEL_CONSULTING,
+			Text:    "teste tiago dependency injection",
+		},
+	)
 
 	c := colly.NewCollector()
 
@@ -59,7 +74,7 @@ func Exec(company int, url string) bool {
 						"*Link:* " + url + "\n\n" +
 						"Por favor verifiquem se esse ativo pertence a sua squad!"
 
-					err = service_slack.RequestPostMessage(
+					err = f.slackService.RequestPostMessage(
 						type_slack.PostMessage{
 							Channel: variables_constant.SLACK_CHANNEL_CONSULTING,
 							Text:    slackMessage,

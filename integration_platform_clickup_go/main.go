@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	crawler_service "integration_platform_clickup_go/services/crawler"
 	"integration_platform_clickup_go/services/service_clickup"
 	"integration_platform_clickup_go/services/service_conviso_platform"
-	"integration_platform_clickup_go/services/service_crawler"
+	slack_service "integration_platform_clickup_go/services/slack"
 	"integration_platform_clickup_go/types/type_clickup"
 	"integration_platform_clickup_go/types/type_config"
 	"integration_platform_clickup_go/types/type_enum/enum_clickup_ps_team"
@@ -694,7 +695,8 @@ func MainMenu() {
 		case 3:
 			MenuSearchConvisoPlatform()
 		case 4:
-			SaveYamlFileTest()
+			//SaveYamlFileTest()
+			AssetsNew(variables_global.Customer)
 		default:
 			fmt.Println("Invalid Input")
 		}
@@ -877,6 +879,7 @@ func CreateProject() {
 }
 
 func AssetsNew(integration type_config.ConfigTypeIntegration) {
+
 	var urlBase bytes.Buffer
 
 	urlBase.WriteString(variables_constant.CONVISO_PLATFORM_URL_BASE)
@@ -886,9 +889,12 @@ func AssetsNew(integration type_config.ConfigTypeIntegration) {
 
 	page := 1
 
+	slackService := slack_service.SlackServiceNew()
+	crawlerService := crawler_service.CrawlerServiceNew(slackService)
+
 	for {
 		urlPage := strings.Replace(urlBase.String(), "{1}", strconv.Itoa(page), -1)
-		cont := service_crawler.Exec(integration.PlatformID, urlPage)
+		cont := crawlerService.Exec(integration.PlatformID, urlPage)
 		if !cont {
 			break
 		}
@@ -937,6 +943,8 @@ func main() {
 			qdo não encontrar um cliente no campo PS Customer, não quebrar a aplicação, selecionar o primeiro da lista ou algo assim
 			verificar possibilidade de melhorar a função de recuperar o customfield do clickup na função returntask
 	*/
+
+	AssetsNew(variables_global.Customer)
 
 	if !InitialCheck() {
 		fmt.Println("You need to correct the above information before rerunning the application")
