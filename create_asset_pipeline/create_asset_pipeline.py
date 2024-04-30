@@ -28,14 +28,14 @@ create_asset:
         fi
       fi
 
-conviso-ast:
-  image: convisoappsec/convisocli:latest
-  services:
-    - docker:dind
-  only:
-    variables:
-      - $CONVISO_API_KEY
-  script:
-    - conviso ast run
-  tags:
-    - docker
+#conviso-ast:
+#  image: convisoappsec/convisocli:latest
+#  services:
+#    - docker:dind
+#  only:
+#    variables:
+#      - $CONVISO_API_KEY
+#  script:
+#    - conviso ast run
+#  tags:
+#    - docker
