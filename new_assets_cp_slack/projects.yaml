@@ -1,0 +1,5 @@
+configslack:
+  httpattempt: 3
+integrations:
+  - integrationname: "Teste tiago"
+    platformid: 0
