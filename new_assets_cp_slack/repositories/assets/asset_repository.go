@@ -5,6 +5,8 @@ import (
 	"errors"
 	type_repository "new_assets_cp_slack/types/repository"
 	"new_assets_cp_slack/utils/constants"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type AssetRepository struct{}

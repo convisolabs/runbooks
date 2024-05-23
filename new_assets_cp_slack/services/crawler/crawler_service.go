@@ -49,7 +49,7 @@ func (f *CrawlerService) Exec(company int, url string) bool {
 				assetExist, err := f.assetRepository.AssetExist(asset)
 
 				if err != nil {
-					fmt.Println("Service Crawler :: Error :: It was impossible to veriry the asset in database!")
+					fmt.Println("Service Crawler :: Error :: It was impossible to veriry the asset in database! :: ", err.Error())
 				}
 
 				if !assetExist {

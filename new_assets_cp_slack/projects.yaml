@@ -1,5 +1,7 @@
 configslack:
   httpattempt: 3
 integrations:
-  - integrationname: "Teste tiago"
+  - integrationname: "Cliente 1"
+    platformid: 0
+  - integrationname: "Cliente 2"
     platformid: 0
