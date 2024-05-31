@@ -1,6 +1,11 @@
 package slack_service
 
-import "sync"
+import (
+	"new_assets_cp_slack/utils/constants"
+	"new_assets_cp_slack/utils/functions"
+	"os"
+	"sync"
+)
 
 var lock = &sync.Mutex{}
 
@@ -12,7 +17,13 @@ func GetSlackServiceSingletonInstance() ISlackService {
 		defer lock.Unlock()
 		if iSlackService == nil {
 
-			iSlackService = SlackServiceNew()
+			iSlackService = SlackServiceNew(
+				map[string]string{
+					"Content-Type":  "application/json",
+					"Authorization": "Bearer " + os.Getenv(constants.SLACK_ASSET_TOKEN_NAME),
+				},
+				functions.GetFunctionsSingletonInstance(),
+			)
 		}
 	}
 	return iSlackService

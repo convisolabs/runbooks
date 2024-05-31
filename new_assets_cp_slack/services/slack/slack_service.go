@@ -10,20 +10,19 @@ import (
 	"new_assets_cp_slack/utils/constants"
 	"new_assets_cp_slack/utils/functions"
 	"new_assets_cp_slack/utils/globals"
-	"os"
 )
 
-type SlackService struct{}
+type SlackService struct {
+	functions   functions.IFunctions
+	HttpHeaders map[string]string
+}
 
-var globalSlackHeaders map[string]string
+func SlackServiceNew(HttpHeaders map[string]string, functions functions.IFunctions) ISlackService {
 
-func SlackServiceNew() ISlackService {
-	globalSlackHeaders = map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer " + os.Getenv(constants.SLACK_ASSET_TOKEN_NAME),
+	return &SlackService{
+		functions:   functions,
+		HttpHeaders: HttpHeaders,
 	}
-
-	return &SlackService{}
 }
 
 func (f *SlackService) RequestPostMessage(request type_slack.PostMessage) error {
@@ -36,7 +35,7 @@ func (f *SlackService) RequestPostMessage(request type_slack.PostMessage) error 
 
 	payload := bytes.NewBuffer(body)
 
-	resp, err := functions.HttpRequestRetry(http.MethodPost, urlPostMessage.String(), globalSlackHeaders, payload, *globals.Config.ConfigSlack.HttpAttempt)
+	resp, err := f.functions.HttpRequestRetry(http.MethodPost, urlPostMessage.String(), f.HttpHeaders, payload, *globals.Config.ConfigSlack.HttpAttempt)
 
 	if err != nil {
 		return errors.New("Error RequestPostMessage: " + err.Error())
