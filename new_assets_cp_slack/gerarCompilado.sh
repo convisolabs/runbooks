@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="v01.00.00"
+version="v01.01.00"
 mainFileName="NewAssetsCPSlack"
 fileNameCompact=""
 auxFileName=""

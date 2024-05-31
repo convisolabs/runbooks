@@ -1,7 +1,15 @@
 configslack:
-  httpattempt: 3
+    httpattempt: 3
+configcp:
+    httpattempt: 3
 integrations:
-  - integrationname: "Cliente 1"
-    platformid: 0
-  - integrationname: "Cliente 2"
-    platformid: 0
+    - integrationname: Cliente 1
+      platformid: 0
+      integrationType: 0
+      slackChannel: QWRQWER
+      lastVerification: "2024-05-31T08:59:49-03:00"
+    - integrationname: Cliente 2
+      platformid: 0
+      integrationType: 1
+      slackChannel: FGHSFGHFGH
+      lastVerification: "2024-05-31T08:59:49-03:00"

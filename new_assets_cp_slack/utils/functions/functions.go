@@ -5,13 +5,31 @@ import (
 	"io"
 	"net/http"
 	type_config "new_assets_cp_slack/types/config"
+	type_integration "new_assets_cp_slack/types/integration"
 	"os"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-func LoadConfigsByYamlFile() (type_config.ConfigType, error) {
+type Functions struct{}
+
+func FunctionsNew() IFunctions {
+	return &Functions{}
+}
+
+func (f *Functions) SaveYamlFile(params type_integration.SaveFile) error {
+
+	err := os.WriteFile(params.FileName, params.FileContent, params.Perm)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (f *Functions) LoadConfigsByYamlFile() (type_config.ConfigType, error) {
 	// Create a struct to hold the YAML data
 	var config type_config.ConfigType
 
@@ -31,7 +49,7 @@ func LoadConfigsByYamlFile() (type_config.ConfigType, error) {
 	return config, nil
 }
 
-func HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error) {
+func (f *Functions) HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error) {
 	req, err := http.NewRequest(httpMethod, httpUrl, payload)
 
 	msgError := ""

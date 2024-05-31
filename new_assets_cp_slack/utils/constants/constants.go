@@ -1,6 +1,6 @@
 package constants
 
-const VERSION = "1.0.0"
+const VERSION = "1.1.0"
 
 const CONVISO_PLATFORM_URL_BASE = "https://app.convisoappsec.com/"
 
@@ -10,6 +10,6 @@ const SLACK_API_URL_BASE = "https://slack.com/api/"
 
 const SLACK_ASSET_TOKEN_NAME = "SLACK_ASSET_TOKEN"
 
-const SLACK_CHANNEL_CONSULTING = "C03QFNQKJTV"
+const CONVISO_PLATFORM_API_GRAPHQL = "https://app.convisoappsec.com/graphql"
 
 const DATABASE_SQLITE_PATH = "db/db.db"

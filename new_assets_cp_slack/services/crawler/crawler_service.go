@@ -6,7 +6,6 @@ import (
 	slack_service "new_assets_cp_slack/services/slack"
 	type_repository "new_assets_cp_slack/types/repository"
 	type_slack "new_assets_cp_slack/types/slack"
-	"new_assets_cp_slack/utils/constants"
 	"os"
 	"regexp"
 	"strings"
@@ -25,7 +24,7 @@ func CrawlerServiceNew(slackService slack_service.ISlackService, assetRepository
 	return &CrawlerService{slackService: slackService, assetRepository: assetRepository}
 }
 
-func (f *CrawlerService) Exec(company int, url string) bool {
+func (f *CrawlerService) Exec(company int, url string, slackChannel string) bool {
 
 	ret := true
 	c := colly.NewCollector()
@@ -69,7 +68,7 @@ func (f *CrawlerService) Exec(company int, url string) bool {
 
 					err = f.slackService.RequestPostMessage(
 						type_slack.PostMessage{
-							Channel: constants.SLACK_CHANNEL_CONSULTING,
+							Channel: slackChannel,
 							Text:    slackMessage,
 						},
 					)
