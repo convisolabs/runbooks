@@ -3,14 +3,21 @@ package cp_service
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"integration_platform_clickup_go/types/type_clickup"
+	"integration_platform_clickup_go/types/type_enum/enum_requirement_activity_status"
 	"integration_platform_clickup_go/types/type_platform"
 	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
 	"integration_platform_clickup_go/utils/variables_global"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"slices"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 )
@@ -110,27 +117,27 @@ const CONVISO_PLATFORM_PROJECT_TYPES = `
 // 	}
 // `
 
-// const CONVISO_PLATFORM_PROJECT_QUERY = `
-// 	query Project($id: ID!)
-// 	{
-// 		project(id: $id) {
-// 			activities{
-// 				id
-// 				title,
-// 				description,
-// 				status
-// 			}
-// 			company{
-// 				id
-// 			}
-// 			id
-// 			label
-// 			objective
-// 			scope,
-// 			status
-// 		}
-// 	}
-// `
+const CONVISO_PLATFORM_PROJECT_QUERY = `
+	query Project($id: ID!)
+	{
+		project(id: $id) {
+			activities{
+				id
+				title,
+				description,
+				status
+			}
+			company{
+				id
+			}
+			id
+			label
+			objective
+			scope,
+			status
+		}
+	}
+`
 
 const CONVISO_PLATFORM_REQUIREMENTS_QUERY = `
 	query Playbooks($CompanyId:ID!,$Requirement:String,$Page:Int){
@@ -185,38 +192,38 @@ const CONVISO_PLATFORM_PROJECT_CREATE = `
 	}
 `
 
-// const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_START = `
-// 	mutation  UpdateActivityStatusToStart($input:UpdateActivityStatusToStartInput!)
-// 	{
-// 		updateActivityStatusToStart(input: $input)
-// 		{
-// 			clientMutationId
-// 			errors
-// 		}
-// 	}
-// `
+const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_START = `
+	mutation  UpdateActivityStatusToStart($input:UpdateActivityStatusToStartInput!)
+	{
+		updateActivityStatusToStart(input: $input)
+		{
+			clientMutationId
+			errors
+		}
+	}
+`
 
-// const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_RESTART = `
-// 	mutation  UpdateActivityStatusToRestart($input:UpdateActivityStatusToRestartInput!)
-// 	{
-// 		updateActivityStatusToRestart(input: $input)
-// 		{
-// 			clientMutationId
-// 			errors
-// 		}
-// 	}
-// `
+const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_RESTART = `
+	mutation  UpdateActivityStatusToRestart($input:UpdateActivityStatusToRestartInput!)
+	{
+		updateActivityStatusToRestart(input: $input)
+		{
+			clientMutationId
+			errors
+		}
+	}
+`
 
-// const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_FINISH = `
-// 	mutation  UpdateActivityStatusToFinish($input:UpdateActivityStatusToFinishInput!)
-// 	{
-// 		updateActivityStatusToFinish(input: $input)
-// 		{
-// 			clientMutationId
-// 			errors
-// 		}
-// 	}
-// `
+const CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_FINISH = `
+	mutation  UpdateActivityStatusToFinish($input:UpdateActivityStatusToFinishInput!)
+	{
+		updateActivityStatusToFinish(input: $input)
+		{
+			clientMutationId
+			errors
+		}
+	}
+`
 
 type CPService struct {
 	HttpHeaders map[string]string
@@ -455,38 +462,30 @@ func (f *CPService) InputSearchRequimentsPlatform() {
 // 	return result.Data.Projects.Collection[0], nil
 // }
 
-// func GetProject(id int) (type_platform.Project, error) {
-// 	var result type_platform.ProjectResponse
+func (f *CPService) GetProject(id int) (type_platform.Project, error) {
+	var result type_platform.ProjectResponse
 
-// 	parameters, _ := json.Marshal(map[string]int{
-// 		"id": id,
-// 	})
+	parameters, _ := json.Marshal(map[string]int{
+		"id": id,
+	})
 
-// 	body, _ := json.Marshal(map[string]string{
-// 		"query":     CONVISO_PLATFORM_PROJECT_QUERY,
-// 		"variables": string(parameters),
-// 	})
+	body, _ := json.Marshal(map[string]string{
+		"query":     CONVISO_PLATFORM_PROJECT_QUERY,
+		"variables": string(parameters),
+	})
 
-// 	payload := bytes.NewBuffer(body)
-// 	req, err := http.NewRequest(http.MethodPost, variables_constant.CONVISO_PLATFORM_API_GRAPHQL, payload)
-// 	if err != nil {
-// 		return type_platform.Project{}, errors.New("Error GetProject New Request " + err.Error())
-// 	}
+	payload := bytes.NewBuffer(body)
+	resp, err := f.functions.HttpRequestRetry(http.MethodPost, variables_constant.CONVISO_PLATFORM_API_GRAPHQL, f.HttpHeaders, payload, 3)
+	if err != nil {
+		return type_platform.Project{}, errors.New("Error GetProject New Request " + err.Error())
+	}
 
-// 	req.Header.Add("Content-Type", "application/json")
-// 	req.Header.Add("x-api-key", os.Getenv("CONVISO_PLATFORM_TOKEN"))
-// 	client := &http.Client{Timeout: time.Second * 10}
-// 	resp, err := client.Do(req)
-// 	defer req.Body.Close()
-// 	if err != nil {
-// 		return type_platform.Project{}, errors.New("Error GetProject ClientDo " + err.Error())
-// 	}
-// 	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
-// 	json.Unmarshal([]byte(string(data)), &result)
+	json.Unmarshal([]byte(string(data)), &result)
 
-// 	return result.Data.Project, nil
-// }
+	return result.Data.Project, nil
+}
 
 func (f *CPService) AddPlatformProject(inputParameters type_platform.ProjectCreateRequestInput) (type_platform.ProjectCreateResponse, error) {
 
@@ -520,170 +519,163 @@ func (f *CPService) AddPlatformProject(inputParameters type_platform.ProjectCrea
 	return ret, nil
 }
 
-// func RetQueryUpdateRequirementsActivityStatus(action int) string {
-// 	switch action {
-// 	case enum_requirement_activity_status.START:
-// 		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_START
-// 	case enum_requirement_activity_status.FINISH:
-// 		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_FINISH
-// 	case enum_requirement_activity_status.RESTART:
-// 		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_RESTART
-// 	default:
-// 		return ""
-// 	}
-// }
+func RetQueryUpdateRequirementsActivityStatus(action int) string {
+	switch action {
+	case enum_requirement_activity_status.START:
+		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_START
+	case enum_requirement_activity_status.FINISH:
+		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_FINISH
+	case enum_requirement_activity_status.RESTART:
+		return CONVISO_PLATFORM_UPDATE_REQUIREMENTS_ACTIVITY_RESTART
+	default:
+		return ""
+	}
+}
 
-// func ChangeActivitiesStatusGraphQl(activityId int, action int) error {
-// 	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
+func ChangeActivitiesStatusGraphQl(activityId int, action int) error {
+	var tokenPlatform = os.Getenv("CONVISO_PLATFORM_TOKEN")
 
-// 	input := type_platform.UpdateRequirementsActivityStatusInputRequest{activityId}
+	input := type_platform.UpdateRequirementsActivityStatusInputRequest{activityId}
 
-// 	activiTyStatusParameters := type_platform.UpdateRequirementsActivityStatusRequest{input}
+	activiTyStatusParameters := type_platform.UpdateRequirementsActivityStatusRequest{input}
 
-// 	parameters, _ := json.Marshal(activiTyStatusParameters)
-// 	body, _ := json.Marshal(map[string]string{
-// 		"query":     RetQueryUpdateRequirementsActivityStatus(action),
-// 		"variables": string(parameters),
-// 	})
+	parameters, _ := json.Marshal(activiTyStatusParameters)
+	body, _ := json.Marshal(map[string]string{
+		"query":     RetQueryUpdateRequirementsActivityStatus(action),
+		"variables": string(parameters),
+	})
 
-// 	payload := bytes.NewBuffer(body)
-// 	req, err := http.NewRequest(http.MethodPost, variables_constant.CONVISO_PLATFORM_API_GRAPHQL, payload)
-// 	if err != nil {
-// 		return errors.New("Error ChangeActivitiesStatusGraphQl New Request: " + err.Error())
-// 	}
+	payload := bytes.NewBuffer(body)
+	req, err := http.NewRequest(http.MethodPost, variables_constant.CONVISO_PLATFORM_API_GRAPHQL, payload)
+	if err != nil {
+		return errors.New("Error ChangeActivitiesStatusGraphQl New Request: " + err.Error())
+	}
 
-// 	req.Header.Add("Content-Type", "application/json")
-// 	req.Header.Add("x-api-key", tokenPlatform)
-// 	client := &http.Client{Timeout: time.Second * 10}
-// 	resp, err := client.Do(req)
-// 	defer req.Body.Close()
-// 	if err != nil {
-// 		return errors.New("Error ChangeActivitiesStatusGraphQl ClientDo: " + err.Error())
-// 	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("x-api-key", tokenPlatform)
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+	if err != nil {
+		return errors.New("Error ChangeActivitiesStatusGraphQl ClientDo: " + err.Error())
+	}
 
-// 	io.ReadAll(resp.Body)
+	io.ReadAll(resp.Body)
 
-// 	return nil
-// }
+	return nil
+}
 
-// func RetActivityIdCustomField(text string) (int, error) {
+func (f *CPService) RetActivityIdCustomField(text string) (int, error) {
 
-// 	textSplit := strings.Split(text, "/")
+	textSplit := strings.Split(text, "/")
 
-// 	if !slices.Contains(textSplit, "project_requirements") {
-// 		return 0, errors.New("Error RequirementsId Slice 0")
-// 	}
+	if !slices.Contains(textSplit, "project_requirements") {
+		return 0, errors.New("Error RequirementsId Slice 0")
+	}
 
-// 	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
+	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
 
-// 	if error != nil {
-// 		return 0, errors.New("Error RequirementsId Not Integer")
-// 	}
+	if error != nil {
+		return 0, errors.New("Error RequirementsId Not Integer")
+	}
 
-// 	return ret, nil
-// }
+	return ret, nil
+}
 
-// func RetProjectIdCustomField(text string) (int, error) {
+func (f *CPService) RetProjectIdCustomField(text string) (int, error) {
 
-// 	textSplit := strings.Split(text, "/")
+	textSplit := strings.Split(text, "/")
 
-// 	if !slices.Contains(textSplit, "projects") {
-// 		return 0, errors.New("Error RetProjectIdCustomField don't have projects")
-// 	}
+	if !slices.Contains(textSplit, "projects") {
+		return 0, errors.New("Error RetProjectIdCustomField don't have projects")
+	}
 
-// 	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
+	ret, error := strconv.Atoi(textSplit[len(textSplit)-1])
 
-// 	if error != nil {
-// 		return 0, errors.New("Error RetProjectIdCustomField Not Integer")
-// 	}
+	if error != nil {
+		return 0, errors.New("Error RetProjectIdCustomField Not Integer")
+	}
 
-// 	return ret, nil
-// }
+	return ret, nil
+}
 
-// func UpdateActivityRequirement(task type_clickup.TaskResponse, project type_platform.Project) error {
-// 	if project.Id != "" {
-// 		activityId, error := RetActivityIdCustomField(task.CustomField.PSConvisoPlatformLink)
+func (f *CPService) UpdateActivityRequirement(task type_clickup.TaskResponse, project type_platform.Project) error {
+	if project.Id != "" {
+		activityId, error := f.RetActivityIdCustomField(task.CustomField.PSConvisoPlatformLink)
 
-// 		if error == nil {
-// 			idxActivity := slices.IndexFunc(project.Activities, func(a type_platform.ActivityCollectionResponse) bool { return a.Id == strconv.Itoa(activityId) })
-// 			if idxActivity != -1 {
-// 				switch strings.ToLower(task.Status.Status) {
-// 				case "backlog", "to do":
-// 					if strings.ToLower(project.Activities[idxActivity].Status) == "done" {
-// 						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.RESTART)
-// 					}
-// 				case "in progress":
-// 					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
-// 						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
-// 					}
-// 				case "done":
-// 					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
-// 						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
-// 						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
-// 					} else if strings.ToLower(project.Activities[idxActivity].Status) == "in_progress" {
-// 						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
-// 					}
-// 				}
-// 			}
-// 		} else {
-// 			return error
-// 		}
-// 	}
+		if error == nil {
+			idxActivity := slices.IndexFunc(project.Activities, func(a type_platform.Activity) bool { return a.Id == strconv.Itoa(activityId) })
+			if idxActivity != -1 {
+				switch strings.ToLower(task.Status.Status) {
+				case "backlog", "to do":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "done" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.RESTART)
+					}
+				case "in progress":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
+					}
+				case "done", "closed":
+					if strings.ToLower(project.Activities[idxActivity].Status) == "not_started" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.START)
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
+					} else if strings.ToLower(project.Activities[idxActivity].Status) == "in_progress" {
+						ChangeActivitiesStatusGraphQl(activityId, enum_requirement_activity_status.FINISH)
+					}
+				}
+			}
+		} else {
+			return error
+		}
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func UpdateProjectRest(request type_clickup.TaskRequestStore, cpProjectId string, timeEstimate int64) error {
+func (f *CPService) UpdateProjectRest(request type_clickup.TaskRequestStore, cpProjectId string, timeEstimate int64) error {
 
-// 	data := url.Values{}
-// 	data.Set("project_status_id", RetNewStatus(request.Status)) //1 - running; 3 done; 4-planned
-// 	data.Set("accept", "1")
-// 	data.Set("project_history_started_at_aux", (time.UnixMilli(request.StartDate)).Format("02/01/2006"))
-// 	data.Set("project_history_estimated_hours", strconv.Itoa(int(timeEstimate)))
-// 	data.Set("project_history_delivery_date", (time.UnixMilli(request.DueDate)).Format("2006-01-02"))
-// 	data.Set("project_history_delivery_date_aux", (time.UnixMilli(request.DueDate)).Format("02/01/2006"))
+	data := url.Values{}
+	data.Set("project_status_id", f.RetNewStatus(request.Status)) //1 - running; 3 done; 4-planned
+	data.Set("accept", "1")
+	data.Set("project_history_started_at_aux", (time.UnixMilli(request.StartDate)).Format("02/01/2006"))
+	data.Set("project_history_estimated_hours", strconv.Itoa(int(timeEstimate)))
+	data.Set("project_history_delivery_date", (time.UnixMilli(request.DueDate)).Format("2006-01-02"))
+	data.Set("project_history_delivery_date_aux", (time.UnixMilli(request.DueDate)).Format("02/01/2006"))
 
-// 	var tokenPlatform = os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME)
+	var tokenPlatform = os.Getenv(variables_constant.CONVISO_PLATFORM_TOKEN_NAME)
 
-// 	var convisoPlatformUrl bytes.Buffer
-// 	convisoPlatformUrl.WriteString(variables_constant.CONVISO_PLATFORM_URL_BASE)
-// 	convisoPlatformUrl.WriteString("scopes/")
-// 	convisoPlatformUrl.WriteString(strconv.Itoa(variables_global.Customer.PlatformID))
-// 	convisoPlatformUrl.WriteString("/projects/")
-// 	convisoPlatformUrl.WriteString(cpProjectId)
-// 	convisoPlatformUrl.WriteString("/update_status")
+	var convisoPlatformUrl bytes.Buffer
+	convisoPlatformUrl.WriteString(variables_constant.CONVISO_PLATFORM_URL_BASE)
+	convisoPlatformUrl.WriteString("scopes/")
+	convisoPlatformUrl.WriteString(strconv.Itoa(variables_global.Customer.PlatformID))
+	convisoPlatformUrl.WriteString("/projects/")
+	convisoPlatformUrl.WriteString(cpProjectId)
+	convisoPlatformUrl.WriteString("/update_status")
 
-// 	req, err := http.NewRequest(http.MethodPost, convisoPlatformUrl.String(), strings.NewReader(data.Encode()))
-// 	if err != nil {
-// 		return errors.New("Error UpdateProjectRest New Request: " + err.Error())
-// 	}
+	resp, err := f.functions.HttpRequestRetry(http.MethodPost, convisoPlatformUrl.String(),
+		map[string]string{
+			"Content-Type":       "application/x-www-form-urlencoded",
+			"Content-Length":     strconv.Itoa(len(data.Encode())),
+			"Accept":             "*/*",
+			"X-Armature-Api-Key": tokenPlatform,
+		}, strings.NewReader(data.Encode()), 3)
+	if err != nil {
+		return errors.New("Error UpdateProjectRest New Request: " + err.Error() + "StatusCode: " + resp.Status)
+	}
 
-// 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-// 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-// 	req.Header.Set("X-Armature-Api-Key", tokenPlatform)
-// 	req.Header.Set("Accept", "*/*")
+	return nil
+}
 
-// 	client := &http.Client{Timeout: time.Second * 10}
-
-// 	resp, err := client.Do(req)
-// 	defer req.Body.Close()
-// 	if err != nil {
-// 		return errors.New("Error UpdateProjectRest ClientDo: " + err.Error() + "StatusCode: " + resp.Status)
-// 	}
-
-// 	return nil
-// }
-
-// func RetNewStatus(statusTask string) string {
-// 	//1 - running; 3 done; 4-planned
-// 	newReturn := statusTask
-// 	switch statusTask {
-// 	case "backlog", "to do":
-// 		newReturn = "4"
-// 	case "in progress":
-// 		newReturn = "1"
-// 	case "done":
-// 		newReturn = "3"
-// 	}
-// 	return newReturn
-// }
+func (f *CPService) RetNewStatus(statusTask string) string {
+	//1 - running; 3 done; 4-planned
+	newReturn := statusTask
+	switch statusTask {
+	case "backlog", "to do":
+		newReturn = "4"
+	case "in progress":
+		newReturn = "1"
+	case "done":
+		newReturn = "3"
+	}
+	return newReturn
+}

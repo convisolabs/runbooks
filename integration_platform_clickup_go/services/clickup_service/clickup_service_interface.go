@@ -9,4 +9,5 @@ type IClickupService interface {
 	ReturnList(listId string) (type_clickup.ListResponse, error)
 	VerifyErrorsProjectWithStore(list type_clickup.ListResponse)
 	UpdateTasksInDoneToClosed(list type_clickup.ListResponse)
+	UpdateProjectWithStore(list type_clickup.ListResponse)
 }

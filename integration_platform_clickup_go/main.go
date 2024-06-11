@@ -142,12 +142,6 @@ func MenuSetupConfig() {
 // 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
 // }
 
-// func UpdateTasksInDoneToClosed(list type_clickup.ListResponse) {
-// 	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
-// 	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
-// 	UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
-// }
-
 // func ListTasksInClosedByPSHierarchy(list type_clickup.ListResponse, psHierarchy int) {
 // 	page := 0
 
@@ -184,171 +178,6 @@ func MenuSetupConfig() {
 // 	}
 // }
 
-// func UpdateProjectWithStore(list type_clickup.ListResponse) {
-// 	UpdateTask(list, enum_clickup_type_ps_hierarchy.TASK, enum_clickup_type_ps_hierarchy.STORE)
-// 	UpdateTask(list, enum_clickup_type_ps_hierarchy.STORE, enum_clickup_type_ps_hierarchy.EPIC)
-// }
-
-// func UpdateTask(list type_clickup.ListResponse, typeConsultingTask int, typeConsultingParent int) {
-// 	page := 0
-
-// 	for {
-
-// 		tasks, err := service_clickup.ReturnTasks(list.Id,
-// 			type_clickup.SearchTask{
-// 				TaskType:      typeConsultingTask,
-// 				Page:          page,
-// 				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
-// 				IncludeClosed: false,
-// 				SubTasks:      true,
-// 				TaskStatuses:  "",
-// 			},
-// 		)
-
-// 		if err != nil {
-// 			fmt.Println("Error UpdateSubtask :: ", err.Error())
-// 			return
-// 		}
-
-// 		var sliceParentId []string
-
-// 		for i := 0; i < len(tasks.Tasks); i++ {
-// 			if tasks.Tasks[i].Parent == "" {
-// 				continue
-// 			}
-
-// 			if slices.Contains(sliceParentId, tasks.Tasks[i].Parent) {
-// 				continue
-// 			}
-
-// 			sliceParentId = append(sliceParentId, tasks.Tasks[i].Parent)
-
-// 			taskParent, err := service_clickup.ReturnTask((tasks.Tasks[i].Parent))
-
-// 			var convisoPlatformProject type_platform.Project
-
-// 			if err != nil {
-// 				fmt.Println("Error UpdateSubtask GetTask Parent :: ", err.Error())
-// 				continue
-// 			}
-
-// 			if taskParent.CustomField.PSProjectHierarchy != typeConsultingParent {
-// 				fmt.Println(
-// 					taskParent.Id, " :: ", taskParent.Name, " :: ", taskParent.Url,
-// 					" :: ", " isn't type ", enum_clickup_type_ps_hierarchy.ToString(typeConsultingParent),
-// 				)
-// 				continue
-// 			}
-
-// 			var requestTask type_clickup.TaskRequestStore
-// 			requestTask.Status = taskParent.Status.Status
-// 			requestTask.DueDate, _ = strconv.ParseInt(taskParent.DueDate, 10, 64)
-// 			requestTask.StartDate, _ = strconv.ParseInt(taskParent.StartDate, 10, 64)
-// 			allTaskDone := true
-// 			hasUpdate := false
-// 			for j := 0; j < len(taskParent.SubTasks); j++ {
-// 				subTask, err := service_clickup.ReturnTask(taskParent.SubTasks[j].Id)
-// 				if err != nil {
-// 					fmt.Println("Error UpdateSubtask GetTask SubTask :: ", err.Error())
-// 					return
-// 				}
-// 				var auxStartDate int64
-// 				var auxDueDate int64
-
-// 				auxStartDate, _ = strconv.ParseInt(subTask.StartDate, 10, 64)
-// 				auxDueDate, _ = strconv.ParseInt(subTask.DueDate, 10, 64)
-// 				if (auxStartDate < requestTask.StartDate && auxStartDate != 0) || (auxStartDate != 0 && requestTask.StartDate == 0) {
-// 					requestTask.StartDate = auxStartDate
-// 					hasUpdate = true
-// 				}
-
-// 				if (auxDueDate > requestTask.DueDate && auxDueDate != 0) || (auxDueDate != 0 && requestTask.DueDate == 0) {
-// 					requestTask.DueDate = auxDueDate
-// 					hasUpdate = true
-// 				}
-
-// 				hasUpdateStatus := false
-// 				requestTask.Status, hasUpdateStatus = service_clickup.RetNewStatus(requestTask.Status, subTask.Status.Status)
-
-// 				if hasUpdateStatus {
-// 					hasUpdate = true
-// 				}
-
-// 				if !strings.EqualFold(subTask.Status.Status, "done") &&
-// 					!strings.EqualFold(subTask.Status.Status, "canceled") &&
-// 					!strings.EqualFold(subTask.Status.Status, "closed") {
-// 					allTaskDone = false
-// 				}
-
-// 				if taskParent.CustomField.PSProjectHierarchy == enum_clickup_type_ps_hierarchy.STORE &&
-// 					taskParent.CustomField.PSConvisoPlatformLink != "" && convisoPlatformProject.Id == "" {
-
-// 					projectId, err := service_conviso_platform.RetProjectIdCustomField(taskParent.CustomField.PSConvisoPlatformLink)
-
-// 					if err == nil {
-// 						convisoPlatformProject, err = service_conviso_platform.GetProject(projectId)
-// 						if err != nil {
-// 							fmt.Println("Error GetProject Conviso Platform :: ", err.Error())
-// 						}
-// 					} else {
-// 						fmt.Println("Error RetProjectIdCustomField Conviso Platform :: ", err.Error())
-// 					}
-// 				}
-
-// 				//update the activity in conviso platform project
-// 				err = service_conviso_platform.UpdateActivityRequirement(subTask, convisoPlatformProject)
-
-// 				if err != nil {
-// 					fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
-// 				}
-
-// 			}
-
-// 			if allTaskDone {
-// 				requestTask.Status = "done"
-// 				hasUpdate = true
-// 			}
-
-// 			if hasUpdate {
-// 				err = service_clickup.RequestPutTaskStore(taskParent.Id, requestTask)
-// 				if err != nil {
-// 					fmt.Println("Store not possible update in clickup")
-// 				} else {
-// 					err = service_conviso_platform.UpdateProjectRest(requestTask, convisoPlatformProject.Id, taskParent.TimeEstimate)
-// 					if err != nil {
-// 						fmt.Println("Store not possible update in conviso platform")
-// 					}
-// 				}
-// 			}
-
-// 			if taskParent.CustomField.PSProjectHierarchy == enum_clickup_type_ps_hierarchy.STORE && variables_global.Customer.ValidateTag {
-// 				deliveryPoint := service_clickup.RetDeliveryPointTag(taskParent.Tags)
-// 				deliveruPointString := strconv.Itoa(deliveryPoint)
-// 				if deliveryPoint != 0 && !strings.EqualFold(deliveruPointString, taskParent.CustomField.PSDeliveryPoints) {
-
-// 					err = service_clickup.RequestSetValueCustomField(taskParent.Id,
-// 						variables_constant.CLICKUP_CUSTOM_FIELD_PS_DELIVERY_POINTS,
-// 						type_clickup.CustomFieldValueRequest{
-// 							deliveruPointString,
-// 						},
-// 					)
-
-// 					if err != nil {
-// 						fmt.Println("Store not possible update delivery points")
-// 					}
-
-// 				}
-// 			}
-// 		}
-
-// 		if tasks.LastPage {
-// 			break
-// 		}
-
-// 		page++
-// 	}
-// }
-
 func MainAction(mainAction int) {
 	fmt.Println("...Starting ClickUp Automation...")
 
@@ -370,8 +199,8 @@ func MainAction(mainAction int) {
 		case enum_main_action.TASKS_VERIFY:
 			iClickupService.VerifyErrorsProjectWithStore(list)
 
-		// case enum_main_action.TASKS_UPDATE:
-		// 	UpdateProjectWithStore(list)
+		case enum_main_action.TASKS_UPDATE:
+			iClickupService.UpdateProjectWithStore(list)
 
 		// case enum_main_action.TASKS_INPROGRESS:
 		// 	ListStoryInProgress(list)
@@ -666,7 +495,7 @@ func main() {
 	SetDefaultValue()
 
 	integrationJustVerify := flag.Bool("tv", false, "Verify if clickup tasks is ok")
-	// integrationUpdateTasks := flag.Bool("tu", false, "Update Conviso Platform and ClickUp Tasks")
+	integrationUpdateTasks := flag.Bool("tu", false, "Update Conviso Platform and ClickUp Tasks")
 	// integrationListTasksInProgress := flag.Bool("tsip", false, "List Clickup Stories In Progress")
 	// integrationListTasksClosed := flag.Bool("tsd", false, "List Clickup Epics, Stories and Tasks in Closed")
 	integrationUpdateTasksDone := flag.Bool("tud", false, "Change tasks done to closed")
@@ -687,10 +516,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	// if *integrationUpdateTasks {
-	// 	MainAction(enum_main_action.TASKS_UPDATE)
-	// 	os.Exit(0)
-	// }
+	if *integrationUpdateTasks {
+		MainAction(enum_main_action.TASKS_UPDATE)
+		os.Exit(0)
+	}
 
 	// if *integrationListTasksInProgress {
 	// 	MainAction(enum_main_action.TASKS_INPROGRESS)

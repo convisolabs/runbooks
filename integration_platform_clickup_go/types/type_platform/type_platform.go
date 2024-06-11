@@ -164,18 +164,16 @@ type Project struct {
 	Status     string     `json:"status"`
 }
 
-// type ProjectResponse struct {
-// 	Data ProjectDataResponse `json:"data"`
-// }
+type ProjectResponse struct {
+	Data struct {
+		Project Project `json:"project"`
+	} `json:"data"`
+}
 
-// type ProjectDataResponse struct {
-// 	Project Project `json:"project"`
-// }
+type UpdateRequirementsActivityStatusRequest struct {
+	Input UpdateRequirementsActivityStatusInputRequest `json:"input"`
+}
 
-// type UpdateRequirementsActivityStatusRequest struct {
-// 	Input UpdateRequirementsActivityStatusInputRequest `json:"input"`
-// }
-
-// type UpdateRequirementsActivityStatusInputRequest struct {
-// 	ActivityId int `json:"activityId"`
-// }
+type UpdateRequirementsActivityStatusInputRequest struct {
+	ActivityId int `json:"activityId"`
+}

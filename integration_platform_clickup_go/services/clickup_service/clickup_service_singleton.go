@@ -1,6 +1,7 @@
 package clickup_service
 
 import (
+	cp_service "integration_platform_clickup_go/services/cp"
 	"integration_platform_clickup_go/utils/functions"
 	"integration_platform_clickup_go/utils/variables_constant"
 	"os"
@@ -23,6 +24,7 @@ func GetClickupServiceSingletonInstance() IClickupService {
 					"Authorization": os.Getenv(variables_constant.CLICKUP_TOKEN_NAME),
 				},
 				functions.GetFunctionsSingletonInstance(),
+				cp_service.GetCPServiceSingletonInstance(),
 			)
 		}
 	}
