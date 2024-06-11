@@ -5,34 +5,34 @@ type MetadataResponse struct {
 	TotalPages  int `json:"totalPages"`
 }
 
+// type JsonData struct {
+// 	Data ProjectCreateDataResponse `json:"data"`
+// }
+
 type RequirementsParameters struct {
 	CompanyId, Page int
 	Requirement     string
 }
 
 type RequirementsResponse struct {
-	Data RequirementsDataResponse `json:"data"`
+	Data struct {
+		Playbooks struct {
+			Collection []Requirements   `json:"collection"`
+			Metadata   MetadataResponse `json:"metadata"`
+		} `json:"playbooks"`
+	} `json:"data"`
 }
 
-type RequirementsDataResponse struct {
-	Playbooks RequirementsPlaybooksResponse `json:"playbooks"`
-}
-
-type RequirementsPlaybooksResponse struct {
-	Collection []RequirementsCollectionResponse `json:"collection"`
-	Metadata   MetadataResponse                 `json:"metadata"`
-}
-
-type RequirementsCollectionResponse struct {
+type Requirements struct {
 	Id    string `json:"id"`
 	Label string `json:"label"`
 }
 
 type ProjectCreateRequest struct {
-	Input ProjectCreateInputRequest `json:"input"`
+	Input ProjectCreateRequestInput `json:"input"`
 }
 
-type ProjectCreateInputRequest struct {
+type ProjectCreateRequestInput struct {
 	CompanyId      int    `json:"companyId"`
 	Label          string `json:"label"`
 	Goal           string `json:"goal"`
@@ -43,38 +43,60 @@ type ProjectCreateInputRequest struct {
 	EstimatedHours string `json:"estimatedHours"`
 }
 
-type ActivityCollectionResponse struct {
+type ProjectCreateResponse struct {
+	Data struct {
+		CreateProject struct {
+			Errors  []string `json:"errors"`
+			Project Project  `json:"project"`
+		} `json:"createProject"`
+	} `json:"data"`
+}
+
+// type ProjectCreateReponse struct {
+// 	Data ProjectCreateDataResponse `json:"data"`
+// }
+
+// type ProjectCreateDataResponse struct {
+// 	Playbooks ProjectCreateCreateProjectResponse `json:"createProject"`
+// }
+
+// type ProjectCreateCreateProjectResponse struct {
+// 	Errors  []string
+// 	Project ProjectCollectionResponse
+// }
+
+type Activity struct {
 	Id          string `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Status      string `json:"status"`
 }
 
-type CompanyCollectionResponse struct {
+type Company struct {
 	Id string `json:"id"`
 }
 
-type ProjectCollectionResponse struct {
-	Id         string                       `json:"id"`
-	Label      string                       `json:"label"`
-	Objective  string                       `json:"objective"`
-	Scope      string                       `json:"scope"`
-	Company    CompanyCollectionResponse    `json:"company"`
-	Activities []ActivityCollectionResponse `json:"activities"`
-}
+// type Project struct {
+// 	Id         string                       `json:"id"`
+// 	Label      string                       `json:"label"`
+// 	Objective  string                       `json:"objective"`
+// 	Scope      string                       `json:"scope"`
+// 	Company    CompanyCollectionResponse    `json:"company"`
+// 	Activities []ActivityCollectionResponse `json:"activities"`
+// }
 
-type ProjectsResponse struct {
-	Data ProjectsDataResponse `json:"data"`
-}
+// type ProjectsResponse struct {
+// 	Data ProjectsDataResponse `json:"data"`
+// }
 
-type ProjectsDataResponse struct {
-	Projects ProjectsProjectsResponse `json:"projects"`
-}
+// type ProjectsDataResponse struct {
+// 	Projects ProjectsProjectsResponse `json:"projects"`
+// }
 
-type ProjectsProjectsResponse struct {
-	Collection []ProjectCollectionResponse `json:"collection"`
-	Metadata   MetadataResponse            `json:"metadata"`
-}
+// type ProjectsProjectsResponse struct {
+// 	Collection []ProjectCollectionResponse `json:"collection"`
+// 	Metadata   MetadataResponse            `json:"metadata"`
+// }
 
 type ProjectType struct {
 	Id          string `json:"id"`
@@ -84,65 +106,68 @@ type ProjectType struct {
 }
 
 type ProjectTypesResponse struct {
-	Data ProjectTypesDataResponse `json:"data"`
+	Data struct {
+		ProjectTypes struct {
+			Collection []ProjectType    `json:"collection"`
+			Metadata   MetadataResponse `json:"metadata"`
+		} `json:"projectTypes"`
+	} `json:"data"`
 }
 
-type ProjectTypesDataResponse struct {
-	ProjectTypes ProjectTypesCollectionMetadataResponse `json:"projectTypes"`
-}
+// type ProjectTypesDataResponse struct {
+// 	ProjectTypes ProjectTypesCollectionMetadataResponse `json:"projectTypes"`
+// }
 
-type ProjectTypesCollectionMetadataResponse struct {
-	Collection []ProjectType    `json:"collection"`
-	Metadata   MetadataResponse `json:"metadata"`
-}
+// type ProjectTypesCollectionMetadataResponse struct {
+// 	Collection []ProjectType    `json:"collection"`
+// 	Metadata   MetadataResponse `json:"metadata"`
+// }
 
 type ProjectTypeParameters struct {
 	Page        int
 	ProjectType string
 }
 
-type DeployType struct {
-	ChangedLines  int         `json:"changedLines"`
-	NewLines      int         `json:"newLines"`
-	RemovedLines  int         `json:"removedLines"`
-	Reviewed      bool        `json:"reviewed"`
-	CurrentCommit string      `json:"currentCommit"`
-	Project       ProjectType `json:"project"`
-}
+// type DeployType struct {
+// 	ChangedLines  int         `json:"changedLines"`
+// 	NewLines      int         `json:"newLines"`
+// 	RemovedLines  int         `json:"removedLines"`
+// 	Reviewed      bool        `json:"reviewed"`
+// 	CurrentCommit string      `json:"currentCommit"`
+// 	Project       ProjectType `json:"project"`
+// }
 
-type DeployTypeCollectionMetadataResponse struct {
-	Collection []DeployType     `json:"collection"`
-	Metadata   MetadataResponse `json:"metadata"`
-}
+// type DeployTypeCollectionMetadataResponse struct {
+// 	Collection []DeployType     `json:"collection"`
+// 	Metadata   MetadataResponse `json:"metadata"`
+// }
 
-type DeployTypeDataResponse struct {
-	DeployTypeData DeployTypeCollectionMetadataResponse `json:"deploysByCompanyId"`
-}
+// type DeployTypeDataResponse struct {
+// 	DeployTypeData DeployTypeCollectionMetadataResponse `json:"deploysByCompanyId"`
+// }
 
-type DeployTypeResponse struct {
-	Data DeployTypeDataResponse `json:"data"`
-}
+// type DeployTypeResponse struct {
+// 	Data DeployTypeDataResponse `json:"data"`
+// }
 
-type PageParameters struct {
-	Page int `json:"Page"`
-}
+// type PageParameters struct {
+// 	Page int `json:"Page"`
+// }
 
 type Project struct {
-	Id         string                       `json:"id"`
-	Label      string                       `json:"label"`
-	Objective  string                       `json:"objective"`
-	Scope      string                       `json:"scope"`
-	Company    CompanyCollectionResponse    `json:"company"`
-	Activities []ActivityCollectionResponse `json:"activities"`
-	Status     string                       `json:"status"`
+	Id         string     `json:"id"`
+	Label      string     `json:"label"`
+	Objective  string     `json:"objective"`
+	Scope      string     `json:"scope"`
+	Company    Company    `json:"company"`
+	Activities []Activity `json:"activities"`
+	Status     string     `json:"status"`
 }
 
 type ProjectResponse struct {
-	Data ProjectDataResponse `json:"data"`
-}
-
-type ProjectDataResponse struct {
-	Project Project `json:"project"`
+	Data struct {
+		Project Project `json:"project"`
+	} `json:"data"`
 }
 
 type UpdateRequirementsActivityStatusRequest struct {

@@ -9,7 +9,6 @@ var Customer = type_config.ConfigTypeIntegration{
 	PlatformID:          0,
 	ClickUpListId:       "",
 	ClickUpCustomerList: "No selected project",
-	//CheckTagsValidationStory: "",
 }
 
 var Config type_config.ConfigType

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"integration_platform_clickup_go/types/type_config"
-	"integration_platform_clickup_go/utils/variables_global"
 	"io"
 	"net/http"
 	"os"
@@ -17,7 +16,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func LoadConfigsByYamlFile() (type_config.ConfigType, error) {
+type Functions struct{}
+
+func FunctionsNew() IFunctions {
+	return &Functions{}
+}
+
+func (f *Functions) LoadConfigsByYamlFile() (type_config.ConfigType, error) {
 
 	// Create a struct to hold the YAML data
 	var config type_config.ConfigType
@@ -38,19 +43,19 @@ func LoadConfigsByYamlFile() (type_config.ConfigType, error) {
 	return config, nil
 }
 
-func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []type_config.ConfigTypeIntegration) (result bool) {
-	result = false
-	for _, customer := range customers {
-		if customer.ClickUpListId == clickUpListId {
-			result = true
-			variables_global.Customer = customer
-			break
-		}
-	}
-	return result
-}
+// func CustomerExistsYamlFileByClickUpListId(clickUpListId string, customers []type_config.ConfigTypeIntegration) (result bool) {
+// 	result = false
+// 	for _, customer := range customers {
+// 		if customer.ClickUpListId == clickUpListId {
+// 			result = true
+// 			variables_global.Customer = customer
+// 			break
+// 		}
+// 	}
+// 	return result
+// }
 
-func ConvertStringToArrayInt(var1 string) []int {
+func (f *Functions) ConvertStringToArrayInt(var1 string) []int {
 	var arrayRet []int
 
 	arrayStr := strings.Split(var1, ";")
@@ -68,7 +73,7 @@ func ConvertStringToArrayInt(var1 string) []int {
 	return arrayRet
 }
 
-func GetTextWithSpace(label string) string {
+func (f *Functions) GetTextWithSpace(label string) string {
 	ret := ""
 
 	EOL := byte('\r')
@@ -93,7 +98,7 @@ func GetTextWithSpace(label string) string {
 	return ret
 }
 
-func HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error) {
+func (f *Functions) HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error) {
 	req, err := http.NewRequest(httpMethod, httpUrl, payload)
 
 	msgError := ""
