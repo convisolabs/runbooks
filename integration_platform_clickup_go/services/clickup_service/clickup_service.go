@@ -110,7 +110,7 @@ func (f *ClickupService) RetCustomFieldValueString(customFieldId string, customF
 
 func (f *ClickupService) RetCustomFieldPSTeam(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID {
+		if strings.EqualFold(customFields[i].Id, variables_global.Config.ConfclickUp.CustomFieldPsTeamId) {
 			if customFields[i].Value == nil {
 				return ""
 			} else {
@@ -123,7 +123,7 @@ func (f *ClickupService) RetCustomFieldPSTeam(customFields []type_clickup.Custom
 
 func (f *ClickupService) RetCustomFieldPSCustomer(customFields []type_clickup.CustomField) string {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID {
+		if strings.EqualFold(customFields[i].Id, variables_global.Config.ConfclickUp.CustomFieldPsCustomerId) {
 			if customFields[i].Value == nil {
 				return ""
 			} else {
@@ -140,7 +140,7 @@ func (f *ClickupService) RetCustomFieldPSCustomer(customFields []type_clickup.Cu
 
 func (f *ClickupService) RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
-		if customFields[i].Id == variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY {
+		if strings.EqualFold(customFields[i].Id, variables_global.Config.ConfclickUp.CustomFieldPsCustomerId) {
 			if customFields[i].Value == nil {
 				return -1
 			} else {
@@ -241,7 +241,7 @@ func (f *ClickupService) ReturnTasks(listId string, searchTasks type_clickup.Sea
 	urlGetTasks.WriteString(listId)
 	urlGetTasks.WriteString("/task?custom_fields=[")
 	urlGetTasks.WriteString("{\"field_id\":\"")
-	urlGetTasks.WriteString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY)
+	urlGetTasks.WriteString(variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId)
 	urlGetTasks.WriteString("\",\"operator\":\"=\",\"value\":\"")
 	urlGetTasks.WriteString(strconv.FormatInt(int64(searchTasks.TaskType), 10))
 	urlGetTasks.WriteString("\"}")
@@ -300,10 +300,10 @@ func (f *ClickupService) ReturnTask(taskId string) (type_clickup.TaskResponse, e
 
 	//add customFields
 	task.CustomField.PSProjectHierarchy = f.RetCustomFieldTypeConsulting(task.CustomFields)
-	task.CustomField.PSConvisoPlatformLink = f.RetCustomFieldValueString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK, task.CustomFields)
+	task.CustomField.PSConvisoPlatformLink = f.RetCustomFieldValueString(variables_global.Config.ConfclickUp.CustomFieldPsCPLinkId, task.CustomFields)
 	task.CustomField.PSTeam = f.RetCustomFieldPSTeam(task.CustomFields)
 	task.CustomField.PSCustomer = f.RetCustomFieldPSCustomer(task.CustomFields)
-	task.CustomField.PSDeliveryPoints = f.RetCustomFieldValueString(variables_constant.CLICKUP_CUSTOM_FIELD_PS_DELIVERY_POINTS, task.CustomFields)
+	task.CustomField.PSDeliveryPoints = f.RetCustomFieldValueString(variables_global.Config.ConfclickUp.CustomFieldPsDeliveryPointsId, task.CustomFields)
 
 	return task, nil
 }
@@ -334,7 +334,7 @@ func (f *ClickupService) RetNewStatus(statusTask string, statusSubTask string) (
 	newReturn := statusTask
 	hasUpdate := false
 
-	switch statusSubTask {
+	switch strings.ToLower(statusSubTask) {
 	case "backlog":
 		break
 	case "to do":
@@ -610,7 +610,7 @@ func (f *ClickupService) VerifySubtask(list type_clickup.ListResponse, customFie
 					continue
 				}
 
-				if len(task.CustomField.PSTeam) == 0 {
+				if variables_global.Customer.ValidatePSTeam && len(task.CustomField.PSTeam) == 0 {
 					fmt.Println("EPIC or Story without PS-TEAM: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", task.Url,
 						" :: ", f.RetAssigness(task.Assignees))
@@ -683,7 +683,7 @@ func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse) {
 				TaskType:      int(enum_clickup_type_ps_hierarchy.TASK),
 				Page:          page,
 				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
-				IncludeClosed: false,
+				IncludeClosed: true,
 				SubTasks:      true,
 				TaskStatuses:  "",
 			},
@@ -729,13 +729,13 @@ func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse) {
 						" :: ", f.RetAssigness(task.Assignees))
 				}
 
-				if task.Status.Status == "done" && task.TimeSpent == 0 {
+				if (strings.EqualFold(task.Status.Status, "done") || strings.EqualFold(task.Status.Status, "closed")) && task.TimeSpent == 0 {
 					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
 						" :: ", f.RetAssigness(task.Assignees))
 				}
 
-				if len(task.CustomField.PSTeam) == 0 {
+				if variables_global.Customer.ValidatePSTeam && len(task.CustomField.PSTeam) == 0 {
 					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
 						strings.ToLower(task.Status.Status), " :: ", "PS-Team empty", " :: ", task.Url,
 						" :: ", f.RetAssigness(task.Assignees))
@@ -817,7 +817,7 @@ func (f *ClickupService) UpdateTask(list type_clickup.ListResponse, typeConsulti
 				TaskType:      typeConsultingTask,
 				Page:          page,
 				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
-				IncludeClosed: false,
+				IncludeClosed: true,
 				SubTasks:      true,
 				TaskStatuses:  "",
 			},
@@ -913,17 +913,18 @@ func (f *ClickupService) UpdateTask(list type_clickup.ListResponse, typeConsulti
 					}
 				}
 
-				//update the activity in conviso platform project
-				err = f.CPService.UpdateActivityRequirement(subTask, convisoPlatformProject)
+				if convisoPlatformProject.Id != "" {
+					//update the activity in conviso platform project
+					err = f.CPService.UpdateActivityRequirement(subTask, convisoPlatformProject)
 
-				if err != nil {
-					fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
+					if err != nil {
+						fmt.Println("Task ", subTask.Name, " not possible update requirement activity in Conviso Platform")
+					}
 				}
-
 			}
 
 			if allTaskDone {
-				requestTask.Status = "done"
+				requestTask.Status = "closed"
 				hasUpdate = true
 			}
 
@@ -932,9 +933,11 @@ func (f *ClickupService) UpdateTask(list type_clickup.ListResponse, typeConsulti
 				if err != nil {
 					fmt.Println("Store not possible update in clickup")
 				} else {
-					err = f.CPService.UpdateProjectRest(requestTask, convisoPlatformProject.Id, taskParent.TimeEstimate)
-					if err != nil {
-						fmt.Println("Store not possible update in conviso platform")
+					if convisoPlatformProject.Id != "" {
+						err = f.CPService.UpdateProjectRest(requestTask, convisoPlatformProject.Id, taskParent.TimeEstimate)
+						if err != nil {
+							fmt.Println("Store not possible update in conviso platform: " + err.Error())
+						}
 					}
 				}
 			}
@@ -945,7 +948,7 @@ func (f *ClickupService) UpdateTask(list type_clickup.ListResponse, typeConsulti
 				if deliveryPoint != 0 && !strings.EqualFold(deliveruPointString, taskParent.CustomField.PSDeliveryPoints) {
 
 					err = f.RequestSetValueCustomField(taskParent.Id,
-						variables_constant.CLICKUP_CUSTOM_FIELD_PS_DELIVERY_POINTS,
+						variables_global.Config.ConfclickUp.CustomFieldPsDeliveryPointsId,
 						type_clickup.CustomFieldValueRequest{
 							deliveruPointString,
 						},

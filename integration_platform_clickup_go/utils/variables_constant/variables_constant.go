@@ -1,16 +1,6 @@
 package variables_constant
 
-const VERSION = "3.0.0"
-
-const CLICKUP_CUSTOM_FIELD_PS_CP_LINK = "9974fcfc-3634-4620-8b89-a9d0b6958ce6"
-
-const CLICKUP_CUSTOM_FIELD_PS_HIERARCHY = "addf1ada-84b4-494c-b640-45d0bb698181"
-
-const CLICKUP_CUSTOM_FIELD_PS_TEAM_ID = "ca0056b6-a9fc-45cd-bd89-f7ea3067ebb4"
-
-const CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID = "f3b4ecc4-737b-4040-a75d-664e89ad2f3a"
-
-const CLICKUP_CUSTOM_FIELD_PS_DELIVERY_POINTS = "761d0b8d-5586-4c91-b861-1bc49210a0ee"
+const VERSION = "3.0.1"
 
 const CLICKUP_API_URL_BASE = "https://api.clickup.com/api/v2/"
 
