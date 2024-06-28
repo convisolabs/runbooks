@@ -328,26 +328,38 @@ func CreateProject() {
 
 	createProject, err := iCPService.AddPlatformProject(createConvisoPlatform)
 
-	if err != nil {
-		fmt.Println("Error CreateProject: ", err.Error())
+	if err != nil || len(createProject.Data.CreateProject.Errors) > 0 {
+
+		msgError := "Error CreateProject: "
+
+		if err != nil {
+			msgError = msgError + err.Error()
+		}
+
+		for i := 0; i < len(createProject.Data.CreateProject.Errors); i++ {
+			msgError = msgError + " " + createProject.Data.CreateProject.Errors[i]
+		}
+
+		fmt.Println(msgError)
+		return
 	}
 
 	customFieldUrlConvisoPlatform := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK,
+		variables_global.Config.ConfclickUp.CustomFieldPsCPLinkId,
 		"https://app.convisoappsec.com/scopes/" + strconv.Itoa(variables_global.Customer.PlatformID) + "/projects/" + createProject.Data.CreateProject.Project.Id,
 	}
 
 	customFieldPSHierarchy := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
+		variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId,
 		strconv.Itoa(enum_clickup_type_ps_hierarchy.STORE),
 	}
 
 	customFieldPSTeam := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_CUSTOM_FIELD_PS_TEAM_ID,
+		variables_global.Config.ConfclickUp.CustomFieldPsTeamId,
 		strconv.Itoa(enum_clickup_ps_team.CONSULTING),
 	}
 
-	customerOrder, err := iClickupService.RetClickUpDropDownPosition(variables_global.Customer.ClickUpListId, variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+	customerOrder, err := iClickupService.RetClickUpDropDownPosition(variables_global.Customer.ClickUpListId, variables_global.Config.ConfclickUp.CustomFieldPsCustomerId,
 		variables_global.Customer.ClickUpCustomerList)
 
 	if err != nil {
@@ -356,7 +368,7 @@ func CreateProject() {
 	}
 
 	customFieldPSCustomer := type_clickup.CustomFieldRequest{
-		variables_constant.CLICKUP_CUSTOM_FIELD_PS_CUSTOMER_ID,
+		variables_global.Config.ConfclickUp.CustomFieldPsCustomerId,
 		strconv.Itoa(customerOrder),
 	}
 
@@ -400,12 +412,12 @@ func CreateProject() {
 			convisoPlatformUrl.WriteString(createProject.Data.CreateProject.Project.Activities[i].Id)
 
 			customFieldUrlConvisoPlatformSubTask := type_clickup.CustomFieldRequest{
-				variables_constant.CLICKUP_CUSTOM_FIELD_PS_CP_LINK,
+				variables_global.Config.ConfclickUp.CustomFieldPsCPLinkId,
 				convisoPlatformUrl.String(),
 			}
 
 			customFieldTypeConsultingSubTask := type_clickup.CustomFieldRequest{
-				variables_constant.CLICKUP_CUSTOM_FIELD_PS_HIERARCHY,
+				variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId,
 				strconv.Itoa(enum_clickup_type_ps_hierarchy.TASK),
 			}
 
@@ -472,12 +484,31 @@ func SetDefaultValue() {
 		httpAttempt := 3
 		variables_global.Config.ConfclickUp.HttpAttempt = &httpAttempt
 	}
+
+	if strings.EqualFold(variables_global.Config.ConfclickUp.CustomFieldPsCPLinkId, "") {
+		variables_global.Config.ConfclickUp.CustomFieldPsCPLinkId = "ce46360c-373e-48a2-843f-eb3fd5bbf497"
+	}
+
+	if strings.EqualFold(variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId, "") {
+		variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId = "addf1ada-84b4-494c-b640-45d0bb698181"
+	}
+
+	if strings.EqualFold(variables_global.Config.ConfclickUp.CustomFieldPsTeamId, "") {
+		variables_global.Config.ConfclickUp.CustomFieldPsTeamId = "b30739d1-4169-41dc-b90b-e670a51b8545"
+	}
+
+	if strings.EqualFold(variables_global.Config.ConfclickUp.CustomFieldPsCustomerId, "") {
+		variables_global.Config.ConfclickUp.CustomFieldPsCustomerId = "f3b4ecc4-737b-4040-a75d-664e89ad2f3a"
+	}
+
+	if strings.EqualFold(variables_global.Config.ConfclickUp.CustomFieldPsDeliveryPointsId, "") {
+		variables_global.Config.ConfclickUp.CustomFieldPsDeliveryPointsId = "761d0b8d-5586-4c91-b861-1bc49210a0ee"
+	}
 }
 
 func main() {
 	/*
 		TODO LIST
-			remover gambiarra verificar CP criou projeto
 			separar as atualizações do cp e clickup, hoje tem uma variável, has update, mas deveria ter algo do tipo hasupdate cp e hasupcate clickup
 			qdo não encontrar um cliente no campo PS Customer, não quebrar a aplicação, selecionar o primeiro da lista ou algo assim
 			verificar possibilidade de melhorar a função de recuperar o customfield do clickup na função returntask

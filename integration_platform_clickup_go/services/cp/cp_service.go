@@ -660,7 +660,11 @@ func (f *CPService) UpdateProjectRest(request type_clickup.TaskRequestStore, cpP
 			"X-Armature-Api-Key": tokenPlatform,
 		}, strings.NewReader(data.Encode()), 3)
 	if err != nil {
-		return errors.New("Error UpdateProjectRest New Request: " + err.Error() + "StatusCode: " + resp.Status)
+		errorMsg := "Error UpdateProjectRest New Request: " + err.Error() + " cpProjectId: " + cpProjectId + "Status: " + request.Status
+		if resp != nil {
+			errorMsg = errorMsg + " StatusCode: " + resp.Status
+		}
+		return errors.New(errorMsg)
 	}
 
 	return nil

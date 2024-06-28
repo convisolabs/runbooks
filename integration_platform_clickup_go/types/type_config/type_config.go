@@ -9,11 +9,17 @@ type ConfigTypeIntegration struct {
 	ValidateTag                   bool   `yaml:"validateTag"`
 	ValidatePSCustomer            bool   `yaml:"validatePSCustomer"`
 	ValidatePSConvisoPlatformLink bool   `yaml:"validatePSConvisoPlatformLink"`
+	ValidatePSTeam                bool   `yaml:"validatePSTeam"`
 }
 
 type ConfigTypeClickup struct {
-	User        int64 `yaml:"user"`
-	HttpAttempt *int  `yaml:"httpattempt",omitempty`
+	User                          int64  `yaml:"user"`
+	HttpAttempt                   *int   `yaml:"httpattempt",omitempty`
+	CustomFieldPsCPLinkId         string `yaml:"customFieldPsCPLinkId"`
+	CustomFieldPsHierarchyId      string `yaml:"customFieldPsHierarchyId"`
+	CustomFieldPsTeamId           string `yaml:"customFieldPsTeamId"`
+	CustomFieldPsCustomerId       string `yaml:"customFieldPsCustomerId"`
+	CustomFieldPsDeliveryPointsId string `yaml:"customFieldPsDeliveryPointsId"`
 }
 
 type ConfigTypeGeneral struct {
