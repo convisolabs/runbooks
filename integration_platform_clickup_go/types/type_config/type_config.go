@@ -10,6 +10,7 @@ type ConfigTypeIntegration struct {
 	ValidatePSCustomer            bool   `yaml:"validatePSCustomer"`
 	ValidatePSConvisoPlatformLink bool   `yaml:"validatePSConvisoPlatformLink"`
 	ValidatePSTeam                bool   `yaml:"validatePSTeam"`
+	OnlyCreateTask                bool   `yaml:"onlyCreateTask"`
 }
 
 type ConfigTypeClickup struct {
@@ -23,7 +24,8 @@ type ConfigTypeClickup struct {
 }
 
 type ConfigTypeGeneral struct {
-	IntegrationDefault int `yaml:"integrationdefault"`
+	IntegrationDefault int  `yaml:"integrationdefault"`
+	SaveLogInFile      bool `yaml:"saveLogInFile"`
 }
 
 type ConfigType struct {

@@ -132,4 +132,5 @@ type SearchTask struct {
 	IncludeClosed bool
 	SubTasks      bool
 	TaskStatuses  string
+	DueDateLt     int64
 }

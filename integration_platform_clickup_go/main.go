@@ -84,112 +84,24 @@ func MenuSetupConfig() {
 	}
 }
 
-// func ListStoryInProgress(list type_clickup.ListResponse) {
-// 	page := 0
-
-// 	for {
-// 		tasks, err := service_clickup.ReturnTasks(list.Id,
-// 			type_clickup.SearchTask{
-// 				TaskType:      enum_clickup_type_ps_hierarchy.STORE,
-// 				Page:          page,
-// 				DateUpdatedGt: 0,
-// 				IncludeClosed: false,
-// 				SubTasks:      true,
-// 				TaskStatuses:  enum_clickup_statuses.IN_PROGRESS,
-// 			},
-// 		)
-
-// 		if err != nil {
-// 			fmt.Println("Error ListStoryInProgress :: ", err.Error())
-// 			return
-// 		}
-
-// 		for i := 0; i < len(tasks.Tasks); i++ {
-
-// 			var dtStart time.Time
-// 			var dtDuoDate time.Time
-
-// 			dtIntAux, err := strconv.ParseInt(tasks.Tasks[i].StartDate, 10, 64)
-// 			if err == nil {
-// 				dtStart = time.UnixMilli(dtIntAux)
-// 			}
-
-// 			dtIntAux, err = strconv.ParseInt(tasks.Tasks[i].DueDate, 10, 64)
-// 			if err == nil {
-// 				dtDuoDate = time.UnixMilli(dtIntAux)
-// 			}
-
-// 			fmt.Println("Story In Progress",
-// 				";", variables_global.Customer.IntegrationName,
-// 				";", tasks.Tasks[i].Name,
-// 				";", tasks.Tasks[i].Url,
-// 				";", dtStart.Format("02/01/2006"),
-// 				";", dtDuoDate.Format("02/01/2006"),
-// 				";", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
-// 		}
-
-// 		if tasks.LastPage {
-// 			break
-// 		}
-
-// 		page++
-// 	}
-// }
-
-// func ListTasksInClosed(list type_clickup.ListResponse) {
-// 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
-// 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
-// 	ListTasksInClosedByPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
-// }
-
-// func ListTasksInClosedByPSHierarchy(list type_clickup.ListResponse, psHierarchy int) {
-// 	page := 0
-
-// 	for {
-// 		tasks, err := service_clickup.ReturnTasks(list.Id,
-// 			type_clickup.SearchTask{
-// 				TaskType:      psHierarchy,
-// 				Page:          page,
-// 				DateUpdatedGt: time.Now().Add(-time.Hour * 60).UTC().UnixMilli(),
-// 				IncludeClosed: true,
-// 				SubTasks:      true,
-// 				TaskStatuses:  "closed",
-// 			},
-// 		)
-
-// 		if err != nil {
-// 			fmt.Println("Error ListTasksInClosedByPSHierarchy :: ", err.Error())
-// 			return
-// 		}
-
-// 		for i := 0; i < len(tasks.Tasks); i++ {
-// 			fmt.Println(enum_clickup_type_ps_hierarchy.ToString(psHierarchy), " Closed ",
-// 				" :: ", variables_global.Customer.IntegrationName,
-// 				" :: ", tasks.Tasks[i].Name,
-// 				" :: ", tasks.Tasks[i].Url,
-// 				" :: ", service_clickup.RetAssigness(tasks.Tasks[i].Assignees))
-// 		}
-
-// 		if tasks.LastPage {
-// 			break
-// 		}
-
-// 		page++
-// 	}
-// }
-
 func MainAction(mainAction int) {
-	fmt.Println("...Starting ClickUp Automation...")
+
+	iFunc.Log("...Starting ClickUp Automation...", true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 
 	for i := 0; i < len(variables_global.Config.Integrations); i++ {
 
-		fmt.Println("Found List ", variables_global.Config.Integrations[i].IntegrationName)
-		fmt.Println("Begin: ", time.Now().Format("2006-01-02 15:04:05"))
+		iFunc.Log("Found List "+variables_global.Config.Integrations[i].IntegrationName, true, variables_global.Config.ConfigGeneral.SaveLogInFile)
+		iFunc.Log("Begin", true, variables_global.Config.ConfigGeneral.SaveLogInFile)
+
+		if variables_global.Config.Integrations[i].OnlyCreateTask {
+			iFunc.Log("List used only to create task", true, variables_global.Config.ConfigGeneral.SaveLogInFile)
+			continue
+		}
 
 		list, error := iClickupService.ReturnList(variables_global.Config.Integrations[i].ClickUpListId)
 
 		if error != nil {
-			fmt.Println("Error loading list ", variables_global.Config.Integrations[i].IntegrationName)
+			iFunc.Log("Error loading list "+variables_global.Config.Integrations[i].IntegrationName, true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 			continue
 		}
 
@@ -201,18 +113,15 @@ func MainAction(mainAction int) {
 
 		case enum_main_action.TASKS_UPDATE:
 			iClickupService.UpdateProjectWithStore(list)
-
-		// case enum_main_action.TASKS_INPROGRESS:
-		// 	ListStoryInProgress(list)
-
-		// case enum_main_action.TASKS_INCLOSED:
-		// 	ListTasksInClosed(list)
+			iClickupService.UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.TASK)
+			iClickupService.UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.STORE)
+			iClickupService.UpdateTasksInDoneToClosedPSHierarchy(list, enum_clickup_type_ps_hierarchy.EPIC)
 
 		case enum_main_action.TASKS_UPDATE_DONE_CLOSED:
 			iClickupService.UpdateTasksInDoneToClosed(list)
 		}
 
-		fmt.Println("Finish: ", time.Now().Format("2006-01-02 15:04:05"))
+		iFunc.Log("Finish!", true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 	}
 
 	fmt.Println("...Finishing ClickUp Automation...")
@@ -516,6 +425,8 @@ func main() {
 
 	InitializeDependencyInjection()
 
+	//iFunc.WriteFile("teste", "teste tiago teste tiago")
+
 	if !InitialCheck() {
 		fmt.Println("You need to correct the above information before rerunning the application")
 		fmt.Println("Press the Enter Key to finish!")
@@ -578,5 +489,4 @@ func main() {
 	}
 
 	MainMenu()
-
 }

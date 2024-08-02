@@ -10,4 +10,5 @@ type IClickupService interface {
 	VerifyErrorsProjectWithStore(list type_clickup.ListResponse)
 	UpdateTasksInDoneToClosed(list type_clickup.ListResponse)
 	UpdateProjectWithStore(list type_clickup.ListResponse)
+	UpdateTasksInDoneToClosedPSHierarchy(list type_clickup.ListResponse, psHierarchy int)
 }
