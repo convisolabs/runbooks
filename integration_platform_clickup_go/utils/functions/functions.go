@@ -133,3 +133,43 @@ func (f *Functions) HttpRequestRetry(httpMethod string, httpUrl string, headers 
 
 	return nil, errors.New("Error HttpRequestRetry Final: " + msgError)
 }
+
+func (f *Functions) WriteFile(fileName string, line string) (bool, error) {
+
+	file, err := os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, 0644)
+
+	if err != nil {
+		file, err = os.Create(fileName)
+		if err != nil {
+			fmt.Println(err.Error())
+			return false, errors.New("Error WriteFile - Create: " + err.Error())
+		}
+	}
+
+	_, err = file.WriteString(line + "\n")
+
+	if err != nil {
+		fmt.Println(err.Error())
+		defer file.Close()
+		return false, errors.New("Error WriteFile - WriteString: " + err.Error())
+	}
+
+	defer file.Close()
+
+	return true, nil
+}
+
+func (f *Functions) Log(text string, onlyScreen bool, saveFile bool) (bool, error) {
+
+	if !onlyScreen && saveFile {
+		fileName := "integration_platform_clickup_go_" + time.Now().Format("20060102")
+		_, err := f.WriteFile(fileName, text)
+		if err != nil {
+			return false, errors.New("Log - " + err.Error())
+		}
+	}
+
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05")+": ", text)
+
+	return true, nil
+}

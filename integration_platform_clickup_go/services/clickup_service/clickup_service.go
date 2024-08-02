@@ -35,14 +35,6 @@ func ClickupServiceNew(HttpHeaders map[string]string, Functions functions.IFunct
 	}
 }
 
-// var globalClickupHeaders map[string]string
-
-// func init() {
-// 	globalClickupHeaders = map[string]string{
-// 		"Authorization": os.Getenv(variables_constant.CLICKUP_TOKEN_NAME),
-// 	}
-// }
-
 func (f *ClickupService) RetAssigness(assignees []type_clickup.AssigneeField) string {
 	ret := ""
 
@@ -140,7 +132,7 @@ func (f *ClickupService) RetCustomFieldPSCustomer(customFields []type_clickup.Cu
 
 func (f *ClickupService) RetCustomFieldTypeConsulting(customFields []type_clickup.CustomField) int {
 	for i := 0; i < len(customFields); i++ {
-		if strings.EqualFold(customFields[i].Id, variables_global.Config.ConfclickUp.CustomFieldPsCustomerId) {
+		if strings.EqualFold(customFields[i].Id, variables_global.Config.ConfclickUp.CustomFieldPsHierarchyId) {
 			if customFields[i].Value == nil {
 				return -1
 			} else {
@@ -190,48 +182,6 @@ func (f *ClickupService) RetAllCustomFieldByList(listId string) (type_clickup.Cu
 	return result, nil
 }
 
-// func VerifyTasks(taskEpic type_clickup.TaskResponse) error {
-
-// 	if len(taskEpic.LinkedTasks) == 0 {
-// 		fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", "Nenhuma subtarefa lincada")
-// 	}
-
-// 	for k := 0; k < len(taskEpic.LinkedTasks); k++ {
-// 		auxTaskId := ""
-
-// 		if taskEpic.Id == taskEpic.LinkedTasks[k].LinkId {
-// 			auxTaskId = taskEpic.LinkedTasks[k].TaskId
-// 		} else {
-// 			auxTaskId = taskEpic.LinkedTasks[k].LinkId
-// 		}
-
-// 		taskAux, err := ReturnTask(auxTaskId)
-// 		if err != nil {
-// 			return errors.New("Error taskAux: " + err.Error())
-// 		}
-
-// 		if strings.ToLower(taskAux.Status.Status) != "backlog" && strings.ToLower(taskAux.Status.Status) != "canceled" && strings.ToLower(taskAux.Status.Status) != "blocked" {
-// 			if taskAux.DueDate == "" {
-// 				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "DueDate empty", " :: ", taskAux.Url)
-// 			}
-
-// 			if taskAux.StartDate == "" {
-// 				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "StartDate empty", " :: ", taskAux.Url)
-// 			}
-
-// 			if taskAux.TimeEstimate == 0 {
-// 				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "TimeEstimate empty", " :: ", taskAux.Url)
-// 			}
-
-// 			if taskAux.Status.Status == "done" && taskAux.TimeSpent == 0 {
-// 				fmt.Println("Task with errors: ", taskEpic.List.Name, " - ", taskEpic.Name, " - ", taskAux.Name, " :: ", "TimeSpent empty", " :: ", taskAux.Url)
-// 			}
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 func (f *ClickupService) ReturnTasks(listId string, searchTasks type_clickup.SearchTask) (type_clickup.TasksResponse, error) {
 	var resultTasks type_clickup.TasksResponse
 	var urlGetTasks bytes.Buffer
@@ -254,6 +204,11 @@ func (f *ClickupService) ReturnTasks(listId string, searchTasks type_clickup.Sea
 	if searchTasks.DateUpdatedGt > 0 {
 		urlGetTasks.WriteString("&date_updated_gt=")
 		urlGetTasks.WriteString(strconv.FormatInt(searchTasks.DateUpdatedGt, 10))
+	}
+
+	if searchTasks.DueDateLt > 0 {
+		urlGetTasks.WriteString("&due_date_lt=")
+		urlGetTasks.WriteString(strconv.FormatInt(searchTasks.DueDateLt, 10))
 	}
 
 	if searchTasks.SubTasks {
@@ -351,43 +306,6 @@ func (f *ClickupService) RetNewStatus(statusTask string, statusSubTask string) (
 	return newReturn, hasUpdate
 }
 
-// func RequestPutTask(taskId string, request type_clickup.TaskRequest) error {
-
-// 	var urlPutTask bytes.Buffer
-// 	urlPutTask.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-// 	urlPutTask.WriteString("task/")
-// 	urlPutTask.WriteString(taskId)
-
-// 	body, _ := json.Marshal(request)
-
-// 	payload := bytes.NewBuffer(body)
-
-// 	time.Sleep(time.Second)
-
-// 	req, err := http.NewRequest(http.MethodPut, urlPutTask.String(), payload)
-// 	if err != nil {
-// 		return errors.New("Error RequestPutTask request: " + err.Error())
-// 	}
-
-// 	req.Header.Add("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-// 	client := &http.Client{Timeout: time.Second * 10}
-// 	resp, err := client.Do(req)
-// 	defer req.Body.Close()
-
-// 	if resp.StatusCode != 200 {
-// 		return errors.New("Error RequestPutTask StatusCode: " + http.StatusText(resp.StatusCode))
-// 	}
-
-// 	if err != nil {
-// 		return errors.New("Error RequestPutTask response: " + err.Error())
-// 	}
-
-// 	io.ReadAll(resp.Body)
-
-// 	return nil
-// }
-
 func (f *ClickupService) RequestPutTaskStatus(taskId string, request type_clickup.TaskRequestStatus) error {
 
 	var urlPutTask bytes.Buffer
@@ -452,43 +370,6 @@ func (f *ClickupService) RequestSetValueCustomField(taskId string, customFieldId
 
 	return nil
 }
-
-// func RequestTaskTimeSpent(teamId string, request type_clickup.TaskTimeSpentRequest) error {
-// 	var urlTaskTimeSpent bytes.Buffer
-// 	urlTaskTimeSpent.WriteString(variables_constant.CLICKUP_API_URL_BASE)
-// 	urlTaskTimeSpent.WriteString("team/")
-// 	urlTaskTimeSpent.WriteString(teamId)
-// 	urlTaskTimeSpent.WriteString("/time_entries")
-
-// 	body, _ := json.Marshal(request)
-
-// 	payload := bytes.NewBuffer(body)
-
-// 	time.Sleep(time.Second)
-
-// 	req, err := http.NewRequest(http.MethodPost, urlTaskTimeSpent.String(), payload)
-// 	if err != nil {
-// 		return errors.New("Error RequestTaskTimeSpent request: " + err.Error())
-// 	}
-
-// 	req.Header.Add("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", os.Getenv("CLICKUP_TOKEN"))
-// 	client := &http.Client{Timeout: time.Second * 10}
-// 	resp, err := client.Do(req)
-// 	defer req.Body.Close()
-
-// 	if resp.StatusCode != 200 {
-// 		return errors.New("Error RequestTaskTimeSpent StatusCode: " + http.StatusText(resp.StatusCode))
-// 	}
-
-// 	if err != nil {
-// 		return errors.New("Error RequestTaskTimeSpent response: " + err.Error())
-// 	}
-
-// 	io.ReadAll(resp.Body)
-
-// 	return nil
-// }
 
 func (f *ClickupService) TaskCreateRequest(request type_clickup.TaskCreateRequest) (type_clickup.TaskResponse, error) {
 	var result type_clickup.TaskResponse
@@ -557,7 +438,8 @@ func (f *ClickupService) RetDeliveryPointTag(tags []type_clickup.TagResponse) in
 func (f *ClickupService) VerifyErrorsProjectWithStore(list type_clickup.ListResponse) {
 	f.VerifySubtask(list, int(enum_clickup_type_ps_hierarchy.EPIC), int(enum_clickup_type_ps_hierarchy.STORE))
 	f.VerifySubtask(list, int(enum_clickup_type_ps_hierarchy.STORE), int(enum_clickup_type_ps_hierarchy.TASK))
-	f.VerifyTasks(list)
+	f.VerifyTasks(list, false)
+	f.VerifyTasks(list, true)
 }
 
 func (f *ClickupService) VerifySubtask(list type_clickup.ListResponse, customFieldTypeConsulting int, customFieldTypeConsultingSubTask int) {
@@ -578,7 +460,7 @@ func (f *ClickupService) VerifySubtask(list type_clickup.ListResponse, customFie
 		)
 
 		if err != nil {
-			fmt.Println("Error VerifySubtask :: ", err.Error())
+			f.Functions.Log("Error VerifySubtask :: "+err.Error(), true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 			return
 		}
 
@@ -586,78 +468,80 @@ func (f *ClickupService) VerifySubtask(list type_clickup.ListResponse, customFie
 			task, err := f.ReturnTask(tasks.Tasks[i].Id)
 
 			if err != nil {
-				fmt.Println("Error VerifySubtask GetTask :: ", err.Error())
+				f.Functions.Log("Error VerifySubtask GetTask :: "+err.Error(), true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				return
 			}
 
 			if strings.ToLower(task.Status.Status) != "backlog" {
 
 				if strings.EqualFold(task.Parent, "") && customFieldTypeConsulting != int(enum_clickup_type_ps_hierarchy.EPIC) {
-					fmt.Println("Store  Without EPIC",
-						" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
-						" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Store  Without EPIC"+
+						" :: "+variables_global.Customer.IntegrationName+" :: "+task.Name+
+						" :: "+strings.ToLower(task.Status.Status)+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 					continue
 				}
 
 				if len(task.SubTasks) == 0 {
-					fmt.Println(enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsulting),
-						" Without ",
-						enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask),
-						" :: ", variables_global.Customer.IntegrationName, " :: ", task.Name,
-						" :: ", strings.ToLower(task.Status.Status), " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log(enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsulting)+
+						" Without "+
+						enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask)+
+						" :: "+variables_global.Customer.IntegrationName+" :: "+task.Name+
+						" :: "+strings.ToLower(task.Status.Status)+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 					continue
 				}
 
 				if variables_global.Customer.ValidatePSTeam && len(task.CustomField.PSTeam) == 0 {
-					fmt.Println("EPIC or Story without PS-TEAM: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("EPIC or Story without PS-TEAM: "+variables_global.Customer.IntegrationName+" :: "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if variables_global.Customer.ValidatePSCustomer && len(task.CustomField.PSCustomer) == 0 {
-					fmt.Println("EPIC or Story without PS-Customer: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("EPIC or Story without PS-Customer: "+variables_global.Customer.IntegrationName+" :: "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if customFieldTypeConsulting == int(enum_clickup_type_ps_hierarchy.STORE) && variables_global.Customer.ValidateTag {
 					if !f.CheckTags(task.Tags) {
-						fmt.Println("Story without TAGS", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
-							strings.ToLower(task.Status.Status), " :: ", task.Url,
-							" :: ", f.RetAssigness(task.Assignees))
+						f.Functions.Log("Story without TAGS"+" :: "+variables_global.Customer.IntegrationName+" :: "+task.Name+" :: "+
+							strings.ToLower(task.Status.Status)+" :: "+task.Url+
+							" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 
 					}
 
 					if variables_global.Customer.ValidatePSConvisoPlatformLink && (task.CustomField.PSConvisoPlatformLink == "" || !strings.Contains(task.CustomField.PSConvisoPlatformLink, "/projects/")) {
-						fmt.Println("Story without Conviso Platform URL: ", " :: ", variables_global.Customer.IntegrationName,
-							" :: ", task.Name, " :: ",
-							strings.ToLower(task.Status.Status), " :: ", task.Url,
-							" :: ", f.RetAssigness(task.Assignees))
+						f.Functions.Log("Story without Conviso Platform URL: "+" :: "+variables_global.Customer.IntegrationName+
+							" :: "+task.Name+" :: "+
+							strings.ToLower(task.Status.Status)+" :: "+task.Url+
+							" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 					}
 				}
 
 				for j := 0; j < len(task.SubTasks); j++ {
 					subTask, err := f.ReturnTask(task.SubTasks[j].Id)
 					if err != nil {
-						fmt.Println("Error VerifySubtask GetTask GetSubTask :: ", err.Error())
+						f.Functions.Log("Error VerifySubtask GetTask GetSubTask :: "+err.Error(), true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 						return
 					}
 
 					customFieldsSubTask := f.RetCustomFieldTypeConsulting(subTask.CustomFields)
 
-					if customFieldsSubTask != customFieldTypeConsultingSubTask {
-						fmt.Println(
-							subTask.Name,
-							" should be ",
-							enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask),
-							" but is ",
-							enum_clickup_type_ps_hierarchy.ToString(customFieldsSubTask),
-							" :: ", variables_global.Customer.IntegrationName, " :: ",
-							subTask.Name, " :: ",
-							strings.ToLower(subTask.Status.Status),
-							" :: ", subTask.Url, " :: ", f.RetAssigness(subTask.Assignees))
+					if strings.ToLower(subTask.Status.Status) != "backlog" {
+						if customFieldsSubTask != customFieldTypeConsultingSubTask {
+							f.Functions.Log(
+								subTask.Name+
+									" should be "+
+									enum_clickup_type_ps_hierarchy.ToString(customFieldTypeConsultingSubTask)+
+									" but is "+
+									enum_clickup_type_ps_hierarchy.ToString(customFieldsSubTask)+
+									" :: "+variables_global.Customer.IntegrationName+" :: "+
+									subTask.Name+" :: "+
+									strings.ToLower(subTask.Status.Status)+
+									" :: "+subTask.Url+" :: "+f.RetAssigness(subTask.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
+						}
 					}
 				}
 			}
@@ -672,9 +556,20 @@ func (f *ClickupService) VerifySubtask(list type_clickup.ListResponse, customFie
 
 }
 
-func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse) {
+func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse, overdueTasks bool) {
 
+	var dateUpdatedGt int64
+	var dueDateLt int64
+	includeClosed := true
 	page := 0
+
+	if overdueTasks {
+		auxDueDateLt := time.Now().Add(-time.Hour * 24)
+		dueDateLt = time.Date(auxDueDateLt.Year(), auxDueDateLt.Month(), auxDueDateLt.Day(), 23, 59, 59, 999, time.UTC).UnixMilli()
+		includeClosed = false
+	} else {
+		dateUpdatedGt = time.Now().Add(-time.Hour * 240).UTC().UnixMilli()
+	}
 
 	for {
 
@@ -682,15 +577,16 @@ func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse) {
 			type_clickup.SearchTask{
 				TaskType:      int(enum_clickup_type_ps_hierarchy.TASK),
 				Page:          page,
-				DateUpdatedGt: time.Now().Add(-time.Hour * 240).UTC().UnixMilli(),
-				IncludeClosed: true,
+				DateUpdatedGt: dateUpdatedGt,
+				IncludeClosed: includeClosed,
 				SubTasks:      true,
 				TaskStatuses:  "",
+				DueDateLt:     dueDateLt,
 			},
 		)
 
 		if err != nil {
-			fmt.Println("Error VerifyTasks :: ", err.Error())
+			f.Functions.Log("Error VerifyTasks :: "+err.Error(), true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 			return
 		}
 
@@ -698,53 +594,58 @@ func (f *ClickupService) VerifyTasks(list type_clickup.ListResponse) {
 			task, err := f.ReturnTask(tasks.Tasks[i].Id)
 
 			if err != nil {
-				fmt.Println("Error VerifyTasks GetTask :: ", err.Error())
+				f.Functions.Log("Error VerifyTasks GetTask :: "+err.Error(), true, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				return
 			}
 
 			if strings.ToLower(task.Status.Status) != "backlog" && !f.CheckSpecificTag(task.Tags, "não executada") {
-
 				if task.Parent == "" {
-					fmt.Println("TASK Without Store", " :: ", variables_global.Customer.IntegrationName, " :: ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("TASK Without Store"+" :: "+variables_global.Customer.IntegrationName+" :: "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 					continue
 				}
 
+				if overdueTasks {
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"Task Atrasada"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
+				}
+
 				if task.DueDate == "" {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "DueDate empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"DueDate empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if task.StartDate == "" {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "StartDate empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"StartDate empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if task.TimeEstimate == 0 {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "TimeEstimate empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"TimeEstimate empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if (strings.EqualFold(task.Status.Status, "done") || strings.EqualFold(task.Status.Status, "closed")) && task.TimeSpent == 0 {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "TimeSpent empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"TimeSpent empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if variables_global.Customer.ValidatePSTeam && len(task.CustomField.PSTeam) == 0 {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "PS-Team empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"PS-Team empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 
 				if variables_global.Customer.ValidatePSCustomer && len(task.CustomField.PSCustomer) == 0 {
-					fmt.Println("Task with errors: ", variables_global.Customer.IntegrationName, " - ", task.Name, " - ", task.Name, " :: ",
-						strings.ToLower(task.Status.Status), " :: ", "PS-Customer empty", " :: ", task.Url,
-						" :: ", f.RetAssigness(task.Assignees))
+					f.Functions.Log("Task with errors: "+variables_global.Customer.IntegrationName+" - "+task.Name+" - "+task.Name+" :: "+
+						strings.ToLower(task.Status.Status)+" :: "+"PS-Customer empty"+" :: "+task.Url+
+						" :: "+f.RetAssigness(task.Assignees), false, variables_global.Config.ConfigGeneral.SaveLogInFile)
 				}
 			}
 		}

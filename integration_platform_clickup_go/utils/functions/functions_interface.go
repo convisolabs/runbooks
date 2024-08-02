@@ -11,4 +11,5 @@ type IFunctions interface {
 	GetTextWithSpace(label string) string
 	HttpRequestRetry(httpMethod string, httpUrl string, headers map[string]string, payload io.Reader, attempt int) (*http.Response, error)
 	ConvertStringToArrayInt(var1 string) []int
+	Log(text string, onlyScreen bool, saveFile bool) (bool, error)
 }
