@@ -32,6 +32,7 @@ query = """
       name
       assetsTagList
       updatedAt
+      integrations  # Removido: sem seleção de subcampos
     }
     metadata {
       currentPage
@@ -176,45 +177,50 @@ if operation in ['1', '2', '3']:
     user_input = input("Deseja sincronizar os ativos que estão vinculados nas tags selecionadas? (s/n): ").strip().lower()
     if user_input == 's':
         for asset in filtered_assets:
-            for tag in asset['assetsTagList']:
-                if 'FORTIFY' in integration_tags:
-                    sync_response = sync_asset(asset['id'], integration_tags['FORTIFY'])
-                    print(f"Verificando se o ativo com ID {asset['id']} tem integração com FORTIFY...")
-                    
-                    # Verifica se a resposta contém o campo esperado
-                    sync_asset_data = sync_response.get('data', {}).get('syncAsset')
-                    if sync_asset_data:
-                        if sync_asset_data.get('failureReason'):
-                            print(f"Ativo com ID {asset['id']} não tem integração com FORTIFY: {sync_asset_data['failureReason']}")
-                        else:
-                            errors = sync_response.get('errors', [])
-                            if errors:
-                                error_messages = [error.get('message', 'Erro desconhecido') for error in errors]
-                                print(f"Erro ao sincronizar ativo {asset['id']} com FORTIFY: {', '.join(error_messages)}")
-                            else:
-                                fortify_count += 1
+            # Supondo que `integrations` é uma string simples, ajuste as verificações abaixo se necessário
+            has_fortify = 'FORTIFY' in asset.get('integrations', '')
+            has_dependency_track = 'DEPENDENCY_TRACK' in asset.get('integrations', '')
+            
+            if has_fortify:
+                sync_response = sync_asset(asset['id'], integration_tags['FORTIFY'])
+                print(f"Verificando se o ativo com ID {asset['id']} tem integração com FORTIFY...")
+                
+                sync_asset_data = sync_response.get('data', {}).get('syncAsset')
+                if sync_asset_data:
+                    if sync_asset_data.get('failureReason'):
+                        print(f"Ativo com ID {asset['id']} sincronizando com FORTIFY: {sync_asset_data['failureReason']}")
                     else:
-                        print(f"Ativo com ID {asset['id']} sincronizado com FORTIFY.")
-
-                if 'DEPENDENCY_TRACK' in integration_tags:
-                    sync_response = sync_asset(asset['id'], integration_tags['DEPENDENCY_TRACK'])
-                    print(f"Verificando se o ativo com ID {asset['id']} tem integração DEPENDENCY_TRACK...")
-                    
-                    # Verifica se a resposta contém o campo esperado
-                    sync_asset_data = sync_response.get('data', {}).get('syncAsset')
-                    if sync_asset_data:
-                        if sync_asset_data.get('failureReason'):
-                            print(f"Ativo com ID {asset['id']} não tem integração com DEPENDENCY_TRACK: {sync_asset_data['failureReason']}")
+                        errors = sync_response.get('errors', [])
+                        if errors:
+                            error_messages = [error.get('message', 'Erro desconhecido') for error in errors]
+                            print(f"Erro ao sincronizar ativo {asset['id']} com FORTIFY: {', '.join(error_messages)}")
                         else:
-                            errors = sync_response.get('errors', [])
-                            if errors:
-                                error_messages = [error.get('message', 'Erro desconhecido') for error in errors]
-                                print(f"Erro ao sincronizar ativo {asset['id']} com DEPENDENCY_TRACK: {', '.join(error_messages)}")
-                            else:
-                                dependency_track_count += 1
+                            fortify_count += 1
+                else:
+                    print(f"Ativo com ID {asset['id']} sincronizado com FORTIFY.")
+            else:
+                print(f"Ativo com ID {asset['id']} não possui integração com FORTIFY.")
+                
+            if has_dependency_track:
+                sync_response = sync_asset(asset['id'], integration_tags['DEPENDENCY_TRACK'])
+                print(f"Verificando se o ativo com ID {asset['id']} tem integração DEPENDENCY_TRACK...")
+                
+                sync_asset_data = sync_response.get('data', {}).get('syncAsset')
+                if sync_asset_data:
+                    if sync_asset_data.get('failureReason'):
+                        print(f"Ativo com ID {asset['id']} sincronizando com DEPENDENCY_TRACK: {sync_asset_data['failureReason']}")
                     else:
-                        print(f"Ativo com ID {asset['id']} sincronizado com DEPENDENCY_TRACK.")
+                        errors = sync_response.get('errors', [])
+                        if errors:
+                            error_messages = [error.get('message', 'Erro desconhecido') for error in errors]
+                            print(f"Erro ao sincronizar ativo {asset['id']} com DEPENDENCY_TRACK: {', '.join(error_messages)}")
+                        else:
+                            dependency_track_count += 1
+                else:
+                    print(f"Ativo com ID {asset['id']} sincronizado com DEPENDENCY_TRACK.")
+            else:
+                print(f"Ativo com ID {asset['id']} não possui integração com DEPENDENCY_TRACK.")
         
         # Exibe a contagem de ativos sincronizados por integração
-        print(f"Sincronização concluída. Total de ativos sincronizados com FORTIFY: {fortify_count}")
+        print(f"\nSincronização concluída. Total de ativos sincronizados com FORTIFY: {fortify_count}")
         print(f"Total de ativos sincronizados com DEPENDENCY_TRACK: {dependency_track_count}")
