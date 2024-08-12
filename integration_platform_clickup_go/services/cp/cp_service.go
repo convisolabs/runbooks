@@ -678,7 +678,7 @@ func (f *CPService) RetNewStatus(statusTask string) string {
 		newReturn = "4"
 	case "in progress":
 		newReturn = "1"
-	case "done":
+	case "done", "closed":
 		newReturn = "3"
 	}
 	return newReturn

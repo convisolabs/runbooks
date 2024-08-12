@@ -1,6 +1,6 @@
 package variables_constant
 
-const VERSION = "3.0.2"
+const VERSION = "3.0.3"
 
 const CLICKUP_API_URL_BASE = "https://api.clickup.com/api/v2/"
 
